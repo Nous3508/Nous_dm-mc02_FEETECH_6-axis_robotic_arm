@@ -18,18 +18,21 @@ void STS3215_Init(void)                                     // 初始化函数
 
 void Find_STS3215(void)                                     //寻找舵机ID
 {
-	printf("Finding STS3215...\n");
-	uint8_t i;
-	for(i = 1; i <= 20; i++)
-	{
-		int ID = Ping(i);
-		if(!getLastError())
-		{
-			printf("Servo ID:%d\n", ID);
-			HAL_Delay(100);
-		}
-	}
-	printf("Finding Completed.\n");
+    printf("Finding STS3215...\n");
+    uint8_t i;
+    for(i = 1; i <= 20; i++)
+    {
+        int ID = Ping(i);
+        if(ID >= 0)
+        {
+            printf("Servo ID:%d\n", ID);
+            HAL_Delay(100);
+        } else {
+            // 可选：调试输出具体错误码
+            printf("Ping %d failed (err=%d)\n", i, getLastError());
+        }
+    }
+    printf("Finding Completed.\n");
 }
 
 

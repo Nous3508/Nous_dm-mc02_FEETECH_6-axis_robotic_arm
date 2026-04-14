@@ -80,35 +80,38 @@ int SCS2Host(uint8_t DataL, uint8_t DataH)
 	return Data;
 }
 
+//UART 发送数据接口 — 如果内部缓冲满则自动 flush 后继续写入
 void writeBuf(uint8_t ID, uint8_t MemAddr, uint8_t *nDat, uint8_t nLen, uint8_t Fun)
 {
-	uint8_t i;
-	uint8_t msgLen = 2;
-	uint8_t bBuf[6];
-	uint8_t CheckSum = 0;
-	bBuf[0] = 0xff;
-	bBuf[1] = 0xff;
-	bBuf[2] = ID;
-	bBuf[4] = Fun;
-	if(nDat){
-		msgLen += nLen + 1;
-		bBuf[3] = msgLen;
-		bBuf[5] = MemAddr;
-		writeSCS(bBuf, 6);
-		
-	}else{
-		bBuf[3] = msgLen;
-		writeSCS(bBuf, 5);
-	}
-	CheckSum = ID + msgLen + Fun + MemAddr;
-	if(nDat){
-		for(i=0; i<nLen; i++){
-			CheckSum += nDat[i];
-		}
-		writeSCS(nDat, nLen);
-	}
-	CheckSum = ~CheckSum;
-	writeSCS(&CheckSum, 1);
+    uint8_t i;
+    uint8_t msgLen = 2;
+    uint8_t bBuf[6];
+    uint8_t CheckSum = 0;
+    bBuf[0] = 0xff;
+    bBuf[1] = 0xff;
+    bBuf[2] = ID;
+    bBuf[4] = Fun;
+    if(nDat){
+        msgLen += nLen + 1;
+        bBuf[3] = msgLen;
+        bBuf[5] = MemAddr;
+        writeSCS(bBuf, 6);
+    }else{
+        bBuf[3] = msgLen;
+        writeSCS(bBuf, 5);
+    }
+
+    // 校验和：只包含实际发送的字段
+    CheckSum = ID + msgLen + Fun;
+    if(nDat){
+        CheckSum += MemAddr;
+        for(i=0; i<nLen; i++){
+            CheckSum += nDat[i];
+        }
+        writeSCS(nDat, nLen);
+    }
+    CheckSum = ~CheckSum;
+    writeSCS(&CheckSum, 1);
 }
 
 //普通写指令

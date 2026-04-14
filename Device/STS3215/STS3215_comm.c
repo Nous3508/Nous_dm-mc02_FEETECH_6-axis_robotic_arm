@@ -59,17 +59,24 @@ int readSCS(unsigned char *nDat, int nLen)
 	return ftUart_Read(nDat, nLen);
 }
 
-//UART 发送数据接口
+// UART 发送数据接口 — 如果内部缓冲满则自动 flush 后继续写入
 int writeSCS(unsigned char *nDat, int nLen)
 {
-	while(nLen--){
-		if(wLen<sizeof(wBuf)){
-			wBuf[wLen] = *nDat;
-			wLen++;
-			nDat++;
-		}
-	}
-	return wLen;
+    int written = 0;
+    while(nLen-- > 0){
+        // 如果缓冲区已满，先发送出去以腾出空间
+        if(wLen >= sizeof(wBuf)){
+            wFlushSCS();
+        }
+        if(wLen < sizeof(wBuf)){
+            wBuf[wLen++] = *nDat++;
+            written++;
+        } else {
+            // 即使尝试过 flush，仍没有空间（极端情况），中止写入
+            break;
+        }
+    }
+    return written; // 返回实际写入到缓冲区（非发送量）
 }
 
 int writeByteSCS(unsigned char bDat)
@@ -81,10 +88,17 @@ int writeByteSCS(unsigned char bDat)
 	return wLen;
 }
 
-//接收缓冲区刷新
+// 接收缓冲区刷新 — 清掉串口已有的接收数据（非阻塞方式）
 void rFlushSCS(void)
 {
-	ftBus_Delay();
+    uint8_t tmp;
+    // 使用非阻塞 HAL_UART_Receive（timeout = 0）来清空已接收的数据
+    // 注意：usart.h 中应有 huart10 的声明
+    while(HAL_UART_Receive(&huart10, &tmp, 1, 0) == HAL_OK) {
+        // 丢弃读取到的字节，循环直到没有更多数据（立即返回）
+    }
+    // 额外短延时，保持原有总线切换延迟语义
+    ftBus_Delay();
 }
 
 //发送缓冲区刷新
