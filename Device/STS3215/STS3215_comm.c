@@ -15,21 +15,55 @@ int fputc(int ch, FILE *f)
 	return ch;
 }
 
-//FT舵机串口指令发送函数
+// //FT舵机串口指令发送函数
+// void ftUart_Send(uint8_t *nDat , int nLen)
+// {
+// 	HAL_UART_Transmit(&huart10, nDat, nLen, 100);
+// }
+
+// //FT舵机串口指令应答接收函数
+// int ftUart_Read(uint8_t *nDat, int nLen)
+// {
+// 	if(HAL_OK!=HAL_UART_Receive(&huart10, nDat, nLen, 100)){
+// 		return 0;
+// 	}else{
+// 		return nLen;
+// 	}
+// }
+
+// 临时调试用：打印要发送的字节（hex）并调用原 HAL 发送
 void ftUart_Send(uint8_t *nDat , int nLen)
 {
-	HAL_UART_Transmit(&huart10, nDat, nLen, 100);
+    // 打印要发送的原始字节（方便用串口调试观察）
+    printf("-> TX (%d): ", nLen);
+    for(int i=0;i<nLen;i++){
+        printf("%02X ", nDat[i]);
+    }
+    printf("\n");
+
+    // 真实发送（阻塞）
+    HAL_UART_Transmit(&huart10, nDat, nLen, 200);
 }
 
-//FT舵机串口指令应答接收函数
+// 临时调试用：在接收时打印收到的字节（若有）
 int ftUart_Read(uint8_t *nDat, int nLen)
 {
-	if(HAL_OK!=HAL_UART_Receive(&huart10, nDat, nLen, 100)){
-		return 0;
-	}else{
-		return nLen;
-	}
+    int ret = 0;
+    if(HAL_UART_Receive(&huart10, nDat, nLen, 200) == HAL_OK){
+        ret = nLen;
+        printf("<- RX (%d): ", ret);
+        for(int i=0;i<ret;i++){
+            printf("%02X ", nDat[i]);
+        }
+        printf("\n");
+    } else {
+        // 没有数据或超时
+        printf("<- RX timeout\n");
+        ret = 0;
+    }
+    return ret;
 }
+
 
 //FT舵机总线切换延时，时间大于10us
 void ftBus_Delay(void)

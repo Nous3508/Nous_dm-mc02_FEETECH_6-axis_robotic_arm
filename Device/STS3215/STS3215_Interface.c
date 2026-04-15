@@ -17,7 +17,7 @@
 static uint8_t Level =1;//舵机返回等级1,默认写指令开启应答
 static uint8_t End = 0;//处理器大小端结构,默认小端存储格式
 static uint8_t u8Status;//舵机状态
-static uint8_t u8Error = 0;//通信状态
+static uint8_t u8Error;//通信状态
 uint8_t syncReadRxPacketIndex;
 uint8_t syncReadRxPacketLen;
 uint8_t *syncReadRxPacket;
