@@ -25,26 +25,31 @@ uint8_t *syncReadRxBuff;
 uint16_t syncReadRxBuffLen;
 uint16_t syncReadRxBuffMax;
 
+//设置存储格式
 void setEnd(uint8_t _End)
 {
 	End = _End;
 }
 
+//获取当前存储格式
 uint8_t getEnd(void)
 {
 	return End;
 }
 
+//设置舵机返回等级
 void setLevel(uint8_t _Level)
 {
 	Level = _Level;
 }
 
+//获取当前舵机状态
 int getState(void)
 {
 	return u8Status;
 }
 
+//获取当前通信状态
 int getLastError(void)
 {
 	return u8Error;

@@ -61,10 +61,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t r = 1;
-uint8_t g = 1;
-uint8_t b = 1;
-
+uint8_t i;
 /* USER CODE END 0 */
 
 /**
@@ -110,11 +107,10 @@ int main(void)
   HAL_Delay(1000);
 
   STS3215_Init();
-  uartPort_test_start();
-  char Data[] = "Hello, UART!\r\n";
+  char Data[] = "Hello, UART!   ";
   HAL_UART_Transmit(&huart10, (uint8_t *)Data, sizeof(Data) - 1, 1000);
 
-  printf("Hello, UART!!Hello, UART!\r\n");
+  printf("UART Started!!\r\n");
   Find_STS3215();
 
   /* USER CODE END 2 */
@@ -126,16 +122,14 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    WS2812_Ctrl(r, g, b);
-    r++;
-    g += 5;
-    b += 10;
-    HAL_Delay(1);
-    r++;
-    g++;
-    b++;
-    HAL_Delay(100);
-    uartPort_test_loop();
+    WS2812_Run();
+    // for(i=0;i<=10;i++)
+    // {
+    //   STS3215_WritePosEx(10, 2047 + ((i - 5) * 200), 1000, 50);
+    //   STS3215_WritePosEx(12, 2047 + ((i - 5) * 200), 1000, 50);
+    //   HAL_Delay(500);
+    // }
+
 	}
     // HAL_UART_Receive(&huart10, (uint8_t*)Data, sizeof(Data), 1000);
     // HAL_UART_Transmit(&huart7, (uint8_t*)Data, sizeof(Data)-1, 1000);

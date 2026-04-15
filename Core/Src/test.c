@@ -12,8 +12,6 @@ static uint8_t uart_rx_buf[UART7_RX_BUF_LEN];
 static volatile uint16_t uart_rx_idx = 0;
 static volatile uint8_t uart_packet_ready = 0;
 
-int i = 0;
-
 
 // 启动测试：在 main 初始化后调用一次
 void uartPort_test_start(void)
@@ -47,10 +45,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 // 在主循环中调用此函数以处理已接收包
 void uartPort_test_loop(void)
 {
-    if(!i)
-    {
-        i += 1;
-    }
     if(uart_packet_ready){
         // 添加结束符，打印并回显（直接用 HAL 传输）
         uart_rx_buf[uart_rx_idx] = '\0'; // 以防你用作字符串
