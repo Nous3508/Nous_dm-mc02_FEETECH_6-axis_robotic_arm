@@ -110,7 +110,7 @@ int main(void)
   HAL_Delay(1000);
 
   STS3215_Init();
-  uart10_test_start();
+  uartPort_test_start();
   char Data[] = "Hello, UART!\r\n";
   HAL_UART_Transmit(&huart10, (uint8_t *)Data, sizeof(Data) - 1, 1000);
 
@@ -135,7 +135,7 @@ int main(void)
     g++;
     b++;
     HAL_Delay(100);
-    uart10_test_loop();
+    uartPort_test_loop();
 	}
     // HAL_UART_Receive(&huart10, (uint8_t*)Data, sizeof(Data), 1000);
     // HAL_UART_Transmit(&huart7, (uint8_t*)Data, sizeof(Data)-1, 1000);

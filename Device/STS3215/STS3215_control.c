@@ -68,23 +68,28 @@ void debug_regs_after_tx(void)
 
 void Find_STS3215(void) // 寻找舵机ID
 {
-	printf("Finding STS3215...\n");
+	printf("Finding STS3215...\r\n");
 	uint8_t i;
-	for (i = 1; i <= 20; i++)
+	for (i = 10; i <= 15; i++)
 	{
 		int ID = Ping(i);
 		if (ID >= 0)
 		{
-			printf("Servo ID:%d\n", ID);
+			printf("Servo ID:%d\r\n", ID);
+			HAL_Delay(100);
+		}
+		else if (ID >= 0)
+		{
+			ID = Ping(i);
 			HAL_Delay(100);
 		}
 		else
 		{
-			// 可选：调试输出具体错误码
-			printf("Ping %d failed (err=%d)\n", i, getLastError());
+			printf("ID %d: No response\r\n", i);
+			HAL_Delay(100);
 		}
 	}
-	printf("Finding Completed.\n");
+	printf("Finding Completed.\r\n");
 }
 
 int WritePosEx(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC)

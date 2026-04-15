@@ -16,7 +16,7 @@ int i = 0;
 
 
 // 启动测试：在 main 初始化后调用一次
-void uart_test_start(void)
+void uartPort_test_start(void)
 {
     HAL_UART_Transmit(&USB_TO_PC_Port, (uint8_t *)"UART Receive Started\r\n", 24, 100);
     uart_rx_idx = 0;
@@ -45,7 +45,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 }
 
 // 在主循环中调用此函数以处理已接收包
-void uart7_test_loop(void)
+void uartPort_test_loop(void)
 {
     if(!i)
     {
