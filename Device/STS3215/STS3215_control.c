@@ -27,7 +27,9 @@ void Find_STS3215(void)                                     //寻找舵机ID
         {
             printf("Servo ID:%d\n", ID);
             HAL_Delay(100);
-        } else {
+        } 
+		else 
+		{
             // 可选：调试输出具体错误码
             printf("Ping %d failed (err=%d)\n", i, getLastError());
         }
