@@ -202,12 +202,13 @@ int writeWord(uint8_t ID, uint8_t MemAddr, uint16_t wDat)
 }
 
 //读指令
-//舵机ID，MemAddr内存表地址，返回数据nData，数据长度nLen
+//舵机ID，MemAddr内存表地址，读取数据存入nData，数据长度nLen
+//返回读取数据长度，超时返回-1
 int Read(uint8_t ID, uint8_t MemAddr, uint8_t *nData, uint8_t nLen)
 {
-	int Size;
-	uint8_t bBuf[4];
-	uint8_t calSum;
+	int Size;                                              //数据长度
+	uint8_t bBuf[4];                                       //接收缓冲区，包含ID、长度、状态和校验和
+	uint8_t calSum;                                        //计算校验和
 	uint8_t i;
 	rFlushSCS();
 	writeBuf(ID, MemAddr, &nLen, 1, INST_READ);

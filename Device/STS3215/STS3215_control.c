@@ -1,30 +1,40 @@
 #include "STS3215_control.h"
 #include "main.h"			   // 包含HAL库定义
-#include "STS3215_Interface.h" // 包含STS3215接口定义
+
+/*
+ * 作者: Nous
+ * 日期: 2026-04-16
+ * 描述: STS3215舵机控制函数实现
+ * 说明: 包含初始化、寻ID、位置控制、恒速控制等功能
+ *      使用C99标准，依赖于HAL库进行串口通信
+ *      通过printf输出调试信息，方便观察指令发送情况
+ */
 
 //--------------------------------------------来源于SMS_STS.c-------------------------------------------
 
 #include "stdio.h"
 #include <string.h>
-#include "STS3215_INST.h"
-#include "STS3215_comm.h"
 #include "usart.h"
+#include "STS3215_INST.h"
+#include "STS3215_interface.h"
+#include "STS3215_status.h"
 
 
 // 初始化函数
 void STS3215_Init(void) 
 {
 	setEnd(STS3215_End); // STS3215舵机为小端存储结构
+	FeedBack(-1); // 读取当前舵机状态，更新Mem缓存
 }
 
 // 寻找舵机ID函数
-void Find_STS3215(uint8_t FirstID, uint8_t LastID) 
+void Find_STS3215(void) 
 {
 	printf("Searching STS3215...\r\n");
-	uint8_t FindingID;
-	for (FindingID = FirstID; FindingID <= LastID; FindingID++)
+	uint8_t i;
+	for (i = 0; i < 25; i++)
 	{
-		int ID = Ping(FindingID);
+		int ID = Ping(i);
 		if (ID >= 0)
 		{
 			printf("Servo ID:%d\r\n", ID);
@@ -32,12 +42,12 @@ void Find_STS3215(uint8_t FirstID, uint8_t LastID)
 		}
 		else if (ID >= 0)
 		{
-			ID = Ping(FindingID);
+			ID = Ping(i);
 			HAL_Delay(100);
 		}
 		else
 		{
-			printf("ID %d: No response\r\n", FindingID);
+			printf("ID %d: No response\r\n", i);
 			HAL_Delay(100);
 		}
 	}

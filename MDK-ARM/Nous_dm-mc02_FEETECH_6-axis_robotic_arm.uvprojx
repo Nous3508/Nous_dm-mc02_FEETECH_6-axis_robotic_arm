@@ -610,6 +610,16 @@
               <FileType>5</FileType>
               <FilePath>..\Device\STS3215\STS3215_Interface.h</FilePath>
             </File>
+            <File>
+              <FileName>STS3215_status.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Device\STS3215\STS3215_status.c</FilePath>
+            </File>
+            <File>
+              <FileName>STS3215_status.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Device\STS3215\STS3215_status.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

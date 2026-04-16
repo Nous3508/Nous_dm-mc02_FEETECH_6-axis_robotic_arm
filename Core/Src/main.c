@@ -28,8 +28,7 @@
 #include "test.h"
 #include "ws2812.h"
 #include "STS3215_control.h"
-#include "STS3215_comm.h"
-
+#include "STS3215_status.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

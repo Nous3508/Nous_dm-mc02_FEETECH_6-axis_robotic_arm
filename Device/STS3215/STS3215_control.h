@@ -58,9 +58,7 @@
 
 void STS3215_Init(void);                                            // 初始化函数
 
-// 调试：发送一个完整的 Ping 包（ID = 1）然后阻塞接收 6 字节并打印状态
-
-void Find_STS3215(uint8_t FirstID, uint8_t LastID);                                     //寻找舵机ID
+void Find_STS3215(void);                                     //寻找舵机ID
 extern int STS3215_WritePosEx(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC);//普通写位置指令
 extern int STS3215_RegWritePosEx(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC);//异步写位置指令
 extern void STS3215_SyncWritePosEx(uint8_t ID[], uint8_t IDN, int16_t Position[], uint16_t Speed[], uint8_t ACC[]);//同步写位置指令
@@ -70,4 +68,4 @@ extern int STS3215_CalibrationOfs(uint8_t ID);//中位校准
 extern int STS3215_unLockEpromEx(uint8_t ID);
 extern int STS3215_LockEpromEx(uint8_t ID);
 
-#endif
+#endif // __STS3215_CONTROL_H
