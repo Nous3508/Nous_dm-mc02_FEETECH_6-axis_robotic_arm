@@ -55,14 +55,15 @@ extern uint8_t Mem[];
 #define STS3215_PRESENT_CURRENT_H 70     // 当前电流（高字节）地址（只读)
 
 
-extern int FeedBack(int ID);//反馈舵机信息
-extern int ReadPos(int ID);//读位置
-extern int ReadSpeed(int ID);//读速度
-extern int ReadLoad(int ID);//读输出扭力
-extern int ReadVoltage(int ID);//读电压
-extern int ReadTemper(int ID);//读温度
-extern int ReadMove(int ID);//读移动状态
-extern int ReadCurrent(int ID);//读电流
+void STS3215_ReadStatus(uint8_t ID);
+extern int FeedBack(int ID);
+extern int ReadPos(int ID);
+extern int ReadSpeed(int ID);
+extern int ReadLoad(int ID);
+extern int ReadVoltage(int ID);
+extern int ReadTemper(int ID);
+extern int ReadMove(int ID);
+extern int ReadCurrent(int ID);
 
 
 #endif // __STS3215_STATUS_H

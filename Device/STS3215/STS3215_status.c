@@ -17,6 +17,27 @@
 //舵机状态静态缓存，长度8字节，包含位置、速度、负载、电压、温度、运动状态和电流
 static uint8_t Mem[STS3215_PRESENT_CURRENT_H-STS3215_PRESENT_POSITION_L+1];
 
+
+//读取当前舵机状态并打印
+// Pos: 当前舵机位置
+// Speed: 当前舵机速度
+// Load: 当前舵机负载
+// Voltage: 当前舵机电压
+// Temper: 当前舵机温度
+// Move: 当前舵机运动状态
+// Current: 当前舵机电流
+void STS3215_ReadStatus(uint8_t ID)
+{
+	printf("STS3215 ID: %d ; ", ID);
+	printf("Pos: %d ; ", ReadPos(ID));
+	printf("Speed: %d ; ", ReadSpeed(ID));
+	printf("Load: %d ; ", ReadLoad(ID));
+	printf("Voltage: %d ; ", ReadVoltage(ID));
+	printf("Temperature: %d ; ", ReadTemper(ID));
+	printf("Moving: %d ; ", ReadMove(ID));
+	printf("Current: %d ;\r\n", ReadCurrent(ID));
+}
+
 //读取当前舵机状态，存入Mem缓存
 //返回值为数据长度，超时返回-1
 int FeedBack(int ID)

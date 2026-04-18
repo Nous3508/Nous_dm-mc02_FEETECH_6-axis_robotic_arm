@@ -103,15 +103,15 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   // 等待舵机上电启动
-  HAL_Delay(1000);
+  HAL_Delay(500);
 
-  STS3215_Init();
   char Data[] = "Hello, UART!   ";
   HAL_UART_Transmit(&huart10, (uint8_t *)Data, sizeof(Data) - 1, 1000);
-
+  
   printf("UART Started!!\r\n");
-  Find_STS3215();
-
+  
+  STS3215_Init();
+  HAL_Delay(1000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -122,13 +122,23 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     WS2812_Run();
-    // for(i=0;i<=10;i++)
-    // {
-    //   STS3215_WritePosEx(10, 2047 + ((i - 5) * 200), 1000, 50);
-    //   STS3215_WritePosEx(12, 2047 + ((i - 5) * 200), 1000, 50);
-    //   HAL_Delay(500);
-    // }
 
+    uint8_t temp_i = rand_0_100();
+    STS3215_SetPosEx(11, 2047 + ((rand_0_100() - 50)*4095/100), 100, 100);
+    STS3215_ReadStatus(11);
+    HAL_Delay(100);
+    STS3215_SetPosEx(12, 2047 - ((temp_i - 50)*4095/2000), 100, 100);
+    STS3215_ReadStatus(12);
+    HAL_Delay(100);
+    STS3215_SetPosEx(13, 2047 + ((temp_i - 50)*4095/1000), 100, 100);
+    STS3215_ReadStatus(13);
+    HAL_Delay(100);
+    STS3215_SetPosEx(14, 2047 + ((rand_0_100() - 50)*4095/100), 100, 100);
+    STS3215_ReadStatus(14);
+    HAL_Delay(100);
+    STS3215_SetPosEx(15, 2047 + ((rand_0_100() - 50)*4095/500), 100, 100);
+    STS3215_ReadStatus(15);
+    HAL_Delay(1000);
 	}
     // HAL_UART_Receive(&huart10, (uint8_t*)Data, sizeof(Data), 1000);
     // HAL_UART_Transmit(&huart7, (uint8_t*)Data, sizeof(Data)-1, 1000);

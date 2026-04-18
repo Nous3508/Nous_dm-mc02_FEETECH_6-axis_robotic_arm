@@ -28,7 +28,11 @@ uint16_t syncReadRxBuffMax;
 //设置存储格式
 void setEnd(uint8_t _End)
 {
+	printf("Setting STS3215...\r\n");
 	End = _End;
+	if(getEnd() == _End){
+		printf("Successfully set STS3215 storage format.\r\n");
+	}
 }
 
 //获取当前存储格式
@@ -201,9 +205,10 @@ int writeWord(uint8_t ID, uint8_t MemAddr, uint16_t wDat)
 	return Ack(ID);
 }
 
-//读指令
-//舵机ID，MemAddr内存表地址，读取数据存入nData，数据长度nLen
-//返回读取数据长度，超时返回-1
+/* 读指令
+ * 舵机ID，MemAddr内存表地址，读取数据存入nData，数据长度nLen
+ * 返回读取数据长度，超时返回-1
+ */
 int Read(uint8_t ID, uint8_t MemAddr, uint8_t *nData, uint8_t nLen)
 {
 	int Size;                                              //数据长度

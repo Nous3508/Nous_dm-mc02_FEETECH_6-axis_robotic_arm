@@ -14,7 +14,7 @@ uint8_t B = 1;
 
 
 // 返回 0..100 的均匀随机整数；首次调用会自动用 HAL_GetTick() 做种子
-int rand_0_100(void)
+uint8_t rand_0_100(void)
 {
     // 只播种一次
     static uint8_t seeded = 0;

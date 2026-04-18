@@ -24,7 +24,7 @@
 void STS3215_Init(void) 
 {
 	setEnd(STS3215_End); // STS3215舵机为小端存储结构
-	FeedBack(-1); // 读取当前舵机状态，更新Mem缓存
+	Find_STS3215(); // 寻找舵机ID并打印
 }
 
 // 寻找舵机ID函数
@@ -32,12 +32,12 @@ void Find_STS3215(void)
 {
 	printf("Searching STS3215...\r\n");
 	uint8_t i;
-	for (i = 0; i < 25; i++)
+	for (i = 11; i <= 16; i++)
 	{
 		int ID = Ping(i);
 		if (ID >= 0)
 		{
-			printf("Servo ID:%d\r\n", ID);
+			printf("Response Servo ID:%d\r\n", ID);
 			HAL_Delay(100);
 		}
 		else if (ID >= 0)
@@ -54,8 +54,9 @@ void Find_STS3215(void)
 	printf("Searching Completed.\r\n");
 }
 
-//普通写位置指令
-int STS3215_WritePosEx(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC)
+// 普通写位置指令;
+// ID: 舵机ID，Position: 目标位置，Speed: 速度，ACC: 加速度
+int STS3215_SetPosEx(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC)
 {
 	uint8_t bBuf[7];
 	if (Position < 0)
@@ -69,12 +70,11 @@ int STS3215_WritePosEx(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC
 	Host2SCS(bBuf + 3, bBuf + 4, 0);
 	Host2SCS(bBuf + 5, bBuf + 6, Speed);
 
-	printf("WritePosEx: ID=%d, Position=%d, Speed=%d, ACC=%d\r\n", ID, Position, Speed, ACC);
 	return genWrite(ID, SMS_STS_ACC, bBuf, 7);
 }
 
 //异步写位置指令
-int STS3215_RegWritePosEx(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC)
+int STS3215_SetPosEx_Reg(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t ACC)
 {
 	uint8_t bBuf[7];
 	if (Position < 0)
@@ -88,12 +88,12 @@ int STS3215_RegWritePosEx(uint8_t ID, int16_t Position, uint16_t Speed, uint8_t 
 	Host2SCS(bBuf + 3, bBuf + 4, 0);
 	Host2SCS(bBuf + 5, bBuf + 6, Speed);
 
-	printf("RegWritePosEx: ID=%d, Position=%d, Speed=%d, ACC=%d\r\n", ID, Position, Speed, ACC);
+	printf("SetPosEx_Reg: ID=%d, Position=%d, Speed=%d, ACC=%d\r\n", ID, Position, Speed, ACC);
 	return regWrite(ID, SMS_STS_ACC, bBuf, 7);
 }
 
 //同步写位置指令
-void STS3215_SyncWritePosEx(uint8_t ID[], uint8_t IDN, int16_t Position[], uint16_t Speed[], uint8_t ACC[])
+void STS3215_SetPosEx_Sync(uint8_t ID[], uint8_t IDN, int16_t Position[], uint16_t Speed[], uint8_t ACC[])
 {
 	uint8_t offbuf[32 * 7];
 	uint8_t i;
@@ -127,7 +127,7 @@ void STS3215_SyncWritePosEx(uint8_t ID[], uint8_t IDN, int16_t Position[], uint1
 		Host2SCS(offbuf + i * 7 + 5, offbuf + i * 7 + 6, V);
 	}
 	syncWrite(ID, IDN, SMS_STS_ACC, offbuf, 7);
-	printf("SyncWritePosEx: ID=%d, Position=%d, Speed=%d, ACC=%d\r\n", ID, Position, Speed, ACC);
+	printf("SetPosEx_Sync: ID=%d, Position=%d, Speed=%d, ACC=%d\r\n", ID, Position, Speed, ACC);
 }
 
 //恒速模式
@@ -137,7 +137,7 @@ int STS3215_WheelMode(uint8_t ID)
 }
 
 //恒速模式控制指令
-int STS3215_WriteSpe(uint8_t ID, int16_t Speed, uint8_t ACC)
+int STS3215_SetSpeed_WheelMode(uint8_t ID, int16_t Speed, uint8_t ACC)
 {
 	uint8_t bBuf[7];
 
@@ -156,13 +156,13 @@ int STS3215_CalibrationOfs(uint8_t ID)
 }
 
 //解锁EPROM
-int STS3215_unLockEpromEx(uint8_t ID)
+int STS3215_unLockEPROMEx(uint8_t ID)
 {
 	return writeByte(ID, SMS_STS_LOCK, 0);
 }
 
 //锁定EPROM
-int STS3215_LockEpromEx(uint8_t ID)
+int STS3215_LockEPROMEx(uint8_t ID)
 {
 	return writeByte(ID, SMS_STS_LOCK, 1);
 }
