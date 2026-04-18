@@ -13,9 +13,26 @@
 #include <string.h>
 #include "STS3215_INST.h"
 #include "STS3215_Interface.h"
+#include "stdio.h"
 
 //舵机状态静态缓存，长度8字节，包含位置、速度、负载、电压、温度、运动状态和电流
 static uint8_t Mem[STS3215_PRESENT_CURRENT_H-STS3215_PRESENT_POSITION_L+1];
+
+
+//读取当前所有舵机位置状态，转化为字符串格式并打印
+void STS3215_Get_AllPos_Status(void)
+{
+	//临时存放舵机状态的地址,数据包格式：@ID,位置
+	char STS3215_Status[60];
+	sprintf(STS3215_Status, "A,");
+
+	for(uint8_t i=11; i<=16; i++)
+	{
+		int Pos = ReadPos(i);
+		sprintf(STS3215_Status, "@%d,%d", i, Pos);
+		printf("%s\r\n", STS3215_Status);
+	}
+}
 
 
 //读取当前舵机状态并打印

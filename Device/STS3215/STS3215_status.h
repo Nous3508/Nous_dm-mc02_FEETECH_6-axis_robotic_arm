@@ -55,6 +55,7 @@ extern uint8_t Mem[];
 #define STS3215_PRESENT_CURRENT_H 70     // 当前电流（高字节）地址（只读)
 
 
+void STS3215_Get_AllPos_Status(void);
 void STS3215_ReadStatus(uint8_t ID);
 extern int FeedBack(int ID);
 extern int ReadPos(int ID);

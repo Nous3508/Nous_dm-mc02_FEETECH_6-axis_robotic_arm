@@ -125,19 +125,15 @@ int main(void)
 
     uint8_t temp_i = rand_0_100();
     STS3215_SetPosEx(11, 2047 + ((rand_0_100() - 50)*4095/100), 100, 100);
-    STS3215_ReadStatus(11);
     HAL_Delay(100);
     STS3215_SetPosEx(12, 2047 - ((temp_i - 50)*4095/2000), 100, 100);
-    STS3215_ReadStatus(12);
     HAL_Delay(100);
     STS3215_SetPosEx(13, 2047 + ((temp_i - 50)*4095/1000), 100, 100);
-    STS3215_ReadStatus(13);
     HAL_Delay(100);
     STS3215_SetPosEx(14, 2047 + ((rand_0_100() - 50)*4095/100), 100, 100);
-    STS3215_ReadStatus(14);
     HAL_Delay(100);
     STS3215_SetPosEx(15, 2047 + ((rand_0_100() - 50)*4095/500), 100, 100);
-    STS3215_ReadStatus(15);
+    STS3215_Get_AllPos_Status();
     HAL_Delay(1000);
 	}
     // HAL_UART_Receive(&huart10, (uint8_t*)Data, sizeof(Data), 1000);
