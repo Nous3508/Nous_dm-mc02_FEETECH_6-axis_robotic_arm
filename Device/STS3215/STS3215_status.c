@@ -31,7 +31,7 @@ void STS3215_Get_AllPos_Status(void)
 	{
 		char temp[10];
 		int Pos = ReadPos(i);
-		sprintf(temp, "@%d,%d", i, Pos);
+		sprintf(temp, ",@%d,%d", i, Pos);
 		strcat(STS3215_Status, temp);
 	}
 	printf("%s\r\n", STS3215_Status);

@@ -106,7 +106,7 @@ int main(void)
   HAL_Delay(500);
 
   char Data[] = "Hello, UART!   ";
-  HAL_UART_Transmit(&huart10, (uint8_t *)Data, sizeof(Data) - 1, 1000);
+  HAL_UART_Transmit(&huart7, (uint8_t *)Data, sizeof(Data) - 1, 1000);
   
   printf("UART Started!!\r\n");
   
