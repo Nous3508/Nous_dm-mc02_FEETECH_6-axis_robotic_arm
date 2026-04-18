@@ -20,17 +20,19 @@ static uint8_t Mem[STS3215_PRESENT_CURRENT_H-STS3215_PRESENT_POSITION_L+1];
 
 
 //读取当前所有舵机位置状态，转化为字符串格式并打印
+//数据包格式：A,@ID,位置,@ID,位置...
+//位置单位为度，范围-180~180，正负号表示方向
 void STS3215_Get_AllPos_Status(void)
 {
 	//临时存放舵机状态的地址,数据包格式：@ID,位置
 	char STS3215_Status[60];
 
-	sprintf(STS3215_Status, "A,");
+	sprintf(STS3215_Status, "A");
 
 	for(uint8_t i=11; i<=16; i++)
 	{
 		char temp[10];
-		int Pos = ReadPos(i);
+		int8_t Pos = ((float)ReadPos(i) - 2047) / 2047.0 * 180.0;
 		sprintf(temp, ",@%d,%d", i, Pos);
 		strcat(STS3215_Status, temp);
 	}
