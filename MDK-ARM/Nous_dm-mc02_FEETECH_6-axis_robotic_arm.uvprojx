@@ -620,6 +620,16 @@
               <FileType>5</FileType>
               <FilePath>..\Device\STS3215\STS3215_status.h</FilePath>
             </File>
+            <File>
+              <FileName>Button_switch.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Device\Button_switch.c</FilePath>
+            </File>
+            <File>
+              <FileName>Button_switch.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Device\Button_switch.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
