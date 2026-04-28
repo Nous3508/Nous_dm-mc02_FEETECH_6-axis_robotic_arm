@@ -29,6 +29,8 @@
 #include "ws2812.h"
 #include "STS3215_control.h"
 #include "STS3215_status.h"
+#include "Button_switch.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -122,22 +124,9 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     WS2812_Run();
-
-    uint8_t temp_i = rand_0_100();
-    STS3215_SetPosEx(11, 2047 + ((rand_0_100() - 50)*4095/100), 100, 100);
-    HAL_Delay(100);
-    STS3215_SetPosEx(12, 2047 - ((temp_i - 50)*4095/2000), 100, 100);
-    HAL_Delay(100);
-    STS3215_SetPosEx(13, 2047 + ((temp_i - 50)*4095/1000), 100, 100);
-    HAL_Delay(100);
-    STS3215_SetPosEx(14, 2047 + ((rand_0_100() - 50)*4095/100), 100, 100);
-    HAL_Delay(100);
-    STS3215_SetPosEx(15, 2047 + ((rand_0_100() - 50)*4095/500), 100, 100);
+    Get_Button_State();
     STS3215_Get_AllPos_Status();
-    HAL_Delay(1000);
-	}
-    // HAL_UART_Receive(&huart10, (uint8_t*)Data, sizeof(Data), 1000);
-    // HAL_UART_Transmit(&huart7, (uint8_t*)Data, sizeof(Data)-1, 1000);
+  }
   /* USER CODE END 3 */
 }
 
