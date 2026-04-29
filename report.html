@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FEETECH 六轴机械臂固件深度代码走查报告</title>
+  <style>
+    /* ─── CSS 自定义属性 ─── */
+    :root {
+      --color-primary:    #1e3a5f;
+      --color-accent:     #e67e22;
+      --color-bg:         #f7f9fc;
+      --color-card:       #ffffff;
+      --color-code-bg:    #f4f4f4;
+      --color-border:     #d0d8e4;
+      --color-text:       #2c3e50;
+      --color-muted:      #6c7a8d;
+      --color-row-alt:    #f0f4f8;
+      --color-tag-bg:     #e8f0fe;
+      --color-tag-text:   #1e3a5f;
+      --shadow-card:      0 2px 12px rgba(30,58,95,.08);
+      --radius:           8px;
+      --max-width:        920px;
+    }
+
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    /* ─── Layout ─── */
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 20px 60px; }
+
+    /* ─── Header ─── */
+    header {
+      background: linear-gradient(135deg, var(--color-primary) 0%, #2c5282 100%);
+      color: #fff;
+      padding: 52px 20px 40px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: .02em; }
+    header .subtitle {
+      margin-top: 10px;
+      font-size: .95rem;
+      opacity: .78;
+    }
+    header .badge {
+      display: inline-block;
+      margin-top: 14px;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: .82rem;
+      letter-spacing: .04em;
+    }
+
+    /* ─── Nav / TOC ─── */
+    nav {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      margin: 30px auto 0;
+      max-width: var(--max-width);
+      padding: 22px 28px;
+    }
+    nav h2 { font-size: 1rem; color: var(--color-primary); margin-bottom: 12px; letter-spacing: .06em; text-transform: uppercase; }
+    nav ol { padding-left: 22px; }
+    nav ol li { margin: 5px 0; }
+    nav a { color: var(--color-primary); text-decoration: none; font-weight: 500; }
+    nav a:hover { color: var(--color-accent); text-decoration: underline; }
+
+    /* ─── Sections ─── */
+    section {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      margin-top: 32px;
+      padding: 32px 36px;
+    }
+    section h2 {
+      font-size: 1.35rem;
+      color: var(--color-primary);
+      border-left: 4px solid var(--color-accent);
+      padding-left: 12px;
+      margin-bottom: 20px;
+    }
+    section h3 {
+      font-size: 1.05rem;
+      color: var(--color-primary);
+      margin: 22px 0 10px;
+      font-weight: 600;
+    }
+    section h4 {
+      font-size: .96rem;
+      color: var(--color-accent);
+      margin: 16px 0 8px;
+      font-weight: 600;
+    }
+    p { margin: 8px 0; }
+    ul, ol { padding-left: 24px; margin: 8px 0; }
+    li { margin: 4px 0; }
+
+    /* ─── Inline code ─── */
+    code {
+      background: var(--color-code-bg);
+      border: 1px solid #dde3ec;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: .88em;
+      color: #c0392b;
+    }
+
+    /* ─── Code blocks ─── */
+    pre {
+      background: #1e2a3a;
+      color: #c8d3e0;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      overflow-x: auto;
+      font-size: .84rem;
+      line-height: 1.55;
+      margin: 12px 0;
+    }
+    pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+    .code-comment { color: #7fa8c9; }
+    .code-keyword { color: #e2a44c; }
+    .code-string  { color: #98c379; }
+
+    /* ─── Tables ─── */
+    .table-wrap { overflow-x: auto; margin: 14px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: .9rem;
+    }
+    thead tr { background: var(--color-primary); color: #fff; }
+    thead th { padding: 11px 14px; text-align: left; font-weight: 600; }
+    tbody tr:nth-child(odd)  { background: #fff; }
+    tbody tr:nth-child(even) { background: var(--color-row-alt); }
+    tbody td { padding: 9px 14px; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* ─── Details / Summary ─── */
+    details {
+      background: var(--color-code-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      margin: 12px 0;
+      padding: 0;
+    }
+    summary {
+      padding: 12px 18px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--color-primary);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    summary::before { content: '▶'; font-size: .75em; transition: transform .2s; }
+    details[open] summary::before { transform: rotate(90deg); }
+    details > *:not(summary) { padding: 0 18px 16px; }
+
+    /* ─── Tag / Chip ─── */
+    .tag {
+      display: inline-block;
+      background: var(--color-tag-bg);
+      color: var(--color-tag-text);
+      border: 1px solid #c3d1ea;
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: .8rem;
+      margin: 2px 3px;
+      font-weight: 500;
+    }
+    .tag-warn { background: #fff3e0; color: #c0392b; border-color: #f5c6a0; }
+    .tag-ok   { background: #e8f5e9; color: #1b6b3a; border-color: #a5d6a7; }
+
+    /* ─── Alert box ─── */
+    .alert {
+      border-left: 4px solid var(--color-accent);
+      background: #fff8f0;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 12px 16px;
+      margin: 12px 0;
+      font-size: .92rem;
+    }
+    .alert-danger { border-color: #e74c3c; background: #fdf0f0; }
+    .alert b { font-weight: 700; }
+
+    /* ─── Flow diagram (text art) ─── */
+    .flow-box {
+      background: #1e2a3a;
+      color: #c8d3e0;
+      border-radius: var(--radius);
+      padding: 18px 24px;
+      font-family: 'Courier New', monospace;
+      font-size: .83rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin: 12px 0;
+      white-space: pre;
+    }
+
+    /* ─── Directory tree ─── */
+    .dir-tree {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: .85rem;
+      line-height: 1.8;
+      background: var(--color-code-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      overflow-x: auto;
+    }
+    .dir-tree .dir  { color: var(--color-primary); font-weight: 700; }
+    .dir-tree .key  { color: var(--color-accent);  font-weight: 700; }
+    .dir-tree .note { color: var(--color-muted);   font-style: italic; }
+
+    /* ─── Back to top ─── */
+    .back-top {
+      display: block;
+      text-align: right;
+      margin-top: 16px;
+      font-size: .82rem;
+      color: var(--color-muted);
+      text-decoration: none;
+    }
+    .back-top:hover { color: var(--color-accent); }
+
+    /* ─── Footer ─── */
+    footer {
+      text-align: center;
+      color: var(--color-muted);
+      font-size: .82rem;
+      padding: 32px 20px 20px;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 640px) {
+      section { padding: 20px 18px; }
+      header h1 { font-size: 1.4rem; }
+      nav { padding: 16px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<header>
+  <h1>🤖 FEETECH 六轴机械臂固件<br>深度代码走查报告</h1>
+  <p class="subtitle">仓库：Nous3508 / Nous_dm-mc02_FEETECH_6-axis_robotic_arm</p>
+  <span class="badge">STM32H723VGT6 · HAL · Keil MDK V5.32 · STS3215 串行舵机</span>
+</header>
+
+<!-- ═══════════════════════ NAVIGATION ═══════════════════════ -->
+<div class="container">
+<nav id="top">
+  <h2>📋 目录</h2>
+  <ol>
+    <li><a href="#sec1">项目全局概述</a></li>
+    <li><a href="#sec2">代码架构与模块解析</a></li>
+    <li><a href="#sec3">通信协议深度剖析</a></li>
+    <li><a href="#sec4">硬件交互与调试设计</a></li>
+    <li><a href="#sec5">工程实践评价</a></li>
+  </ol>
+</nav>
+
+<!-- ═══════════════════════ SECTION 1 ═══════════════════════ -->
+<section id="sec1">
+  <h2>一、项目全局概述</h2>
+
+  <h3>1.1 项目目标</h3>
+  <p>
+    基于 <strong>STM32H723VGT6</strong> 的 FEETECH STS3215 六轴串行舵机机械臂控制固件，
+    通过 <code>USART10</code> 串口总线驱动 6 个舵机实现关节运动控制，
+    并经 <code>UART7</code> 向 PC 输出调试日志。
+  </p>
+
+  <h3>1.2 硬件平台</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>项目</th><th>详情</th></tr></thead>
+      <tbody>
+        <tr><td>MCU 型号</td><td><strong>STM32H723VGT6</strong>，LQFP100，Cortex-M7</td></tr>
+        <tr><td>最高主频</td><td><strong>550 MHz</strong>（<code>.ioc</code> 行 135：<code>RCC.CortexFreq_Value=550000000</code>）</td></tr>
+        <tr><td>时钟源</td><td>外部 HSE 24 MHz，PLL1: M=3, N=68, P=1 → SYSCLK = 550 MHz（<code>main.c</code> 行 159–166）</td></tr>
+        <tr><td>HCLK</td><td>275 MHz (AHB DIV2)；APB1/APB2 = 137.5 MHz（<code>main.c</code> 行 179–183）</td></tr>
+        <tr><td>HAL 库版本</td><td>STM32Cube FW_H7 V1.13.0（<code>.ioc</code> 行 104）</td></tr>
+        <tr><td>主工具链</td><td><strong>Keil MDK V5.32</strong>（<code>.ioc</code> 行 119，<code>.uvprojx/.uvoptx</code> 工程文件）</td></tr>
+        <tr><td>备选工具链</td><td>GCC（<code>.ioc</code> 行 94：<code>CompilerLinker=GCC</code>）</td></tr>
+        <tr><td>调试器</td><td><strong>ST-Link + SWD</strong>（PA13/SWDIO, PA14/SWCLK；<code>launch.json</code> 行 9：<code>stlinkgdbtarget</code>）</td></tr>
+        <tr><td>IDE</td><td>VS Code（含 <code>.vscode/</code> 配置）</td></tr>
+        <tr><td>I-Cache</td><td>已启用（<code>main.c</code> 行 82：<code>SCB_EnableICache()</code>）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>1.3 通信架构</h3>
+  <p>双串口分离设计：</p>
+  <div class="flow-box">舵机总线: USART10 ──PE3(TX)──► 舵机RX
+                  ◄─PE2(RX)── 舵机TX
+          115200 8N1，全双工，阻塞收发
+
+日志调试: UART7   ──PE8(TX)──► USB转串口→PC
+                  ◄─PE7(RX)── USB转串口
+          115200 8N1，UART7_IRQ 已启用用于调试</div>
+
+  <ul>
+    <li><code>STS3215_comm.c</code> 行 14：<code>fputc()</code> 将 <code>printf</code> 重定向到 <code>huart7</code> → <strong>调试信息走 UART7</strong></li>
+    <li><code>STS3215_comm.c</code> 行 20–21：<code>ftUart_Send()</code> 写 <code>huart10</code>；行 26–27：<code>ftUart_Read()</code> 读 <code>huart10</code> → <strong>舵机协议帧走 USART10</strong></li>
+  </ul>
+
+  <h3>1.4 技术栈</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>层次</th><th>技术 / 依赖</th></tr></thead>
+      <tbody>
+        <tr><td>语言</td><td>C（C99，注释中标注）</td></tr>
+        <tr><td>库</td><td>STM32Cube HAL（无 LL 直接操作）</td></tr>
+        <tr><td>舵机协议</td><td>FEETECH SCS 串行总线协议（仿 Dynamixel 风格，代码从飞特官方 SDK 移植）</td></tr>
+        <tr><td>RGB LED</td><td>WS2812 驱动（SPI6 模拟单线协议，<code>Device/ws2812.c</code>）</td></tr>
+        <tr><td>按键</td><td>简单轮询 + 消抖（<code>Device/Button_switch.c</code>）</td></tr>
+        <tr><td>构建系统</td><td>Keil <code>.uvprojx</code>（主）+ <code>.ioc</code>（STM32CubeMX 生成代码）</td></tr>
+        <tr><td>调试工具</td><td><code>Core/Src/test.c</code>（UART7 中断回显测试）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="back-top" href="#top">↑ 返回目录</a>
+</section>
+
+<!-- ═══════════════════════ SECTION 2 ═══════════════════════ -->
+<section id="sec2">
+  <h2>二、代码架构与模块解析</h2>
+
+  <h3>2.1 目录树与职责标注</h3>
+  <div class="dir-tree">
+<span class="dir">Nous_dm-mc02_FEETECH_6-axis_robotic_arm/</span>
+├── <span class="dir">Core/</span>
+│   ├── <span class="dir">Inc/</span>                         <span class="note"># HAL生成头文件（main.h, usart.h, gpio.h等）</span>
+│   └── <span class="dir">Src/</span>
+│       ├── <span class="key">main.c</span>                   <span class="note"># ★ 系统入口：外设初始化、主循环</span>
+│       ├── <span class="key">usart.c</span>                  <span class="note"># ★ UART7/USART10 HAL初始化 + MspInit GPIO配置</span>
+│       ├── gpio.c                   <span class="note"># PA0(按键)、PA2(LED) GPIO初始化</span>
+│       ├── spi.c                    <span class="note"># SPI6 初始化（供WS2812使用）</span>
+│       ├── <span class="key">test.c</span>                   <span class="note"># ★ UART7单字节中断收发回显测试工具</span>
+│       ├── stm32h7xx_it.c           <span class="note"># 中断向量表服务函数（IRQ handlers）</span>
+│       ├── stm32h7xx_hal_msp.c      <span class="note"># HAL MSP底层初始化</span>
+│       └── system_stm32h7xx.c       <span class="note"># 系统时钟初始化</span>
+├── <span class="dir">Device/</span>
+│   ├── <span class="dir">STS3215/</span>
+│   │   ├── <span class="key">STS3215_INST.h</span>           <span class="note"># ★ 协议指令常量、波特率宏、寄存器无关定义</span>
+│   │   ├── <span class="key">STS3215_comm.c/.h</span>        <span class="note"># ★ 底层串口收发：fputc重定向、发送缓冲、flush</span>
+│   │   ├── <span class="key">STS3215_Interface.c/.h</span>   <span class="note"># ★ 协议层：封包/拆包、大小端、校验、应答解析</span>
+│   │   ├── <span class="key">STS3215_control.c/.h</span>     <span class="note"># ★ 控制API：初始化、寻ID、位置/速度/EPROM控制</span>
+│   │   └── <span class="key">STS3215_status.c/.h</span>      <span class="note"># ★ 状态读取API：位置/速度/负载/电压/温度/电流</span>
+│   ├── ws2812.c/.h                  <span class="note"># WS2812 RGB LED SPI驱动</span>
+│   └── Button_switch.c/.h           <span class="note"># 按键读取与消抖</span>
+├── <span class="dir">Drivers/</span>
+│   ├── CMSIS/                       <span class="note"># ARM Cortex-M CMSIS核心头文件</span>
+│   └── STM32H7xx_HAL_Driver/        <span class="note"># STM32H7 HAL库源码（官方）</span>
+├── <span class="dir">MDK-ARM/</span>
+│   ├── *.uvprojx / *.uvoptx         <span class="note"># Keil MDK 工程配置文件</span>
+│   └── startup_stm32h723xx.s        <span class="note"># ARM汇编启动文件</span>
+├── .vscode/                         <span class="note"># VS Code 调试配置（ST-Link GDB）</span>
+└── Nous_dm-mc02_FEETECH_6-axis_robotic_arm.ioc  <span class="note"># STM32CubeMX 工程配置</span>
+  </div>
+
+  <!-- ── main.c ── -->
+  <h3>2.2 <code>Core/Src/main.c</code> — 启动流程与主循环</h3>
+  <details>
+    <summary>启动顺序详解（行 82–117）</summary>
+    <pre><code>SCB_EnableICache()           <span class="code-comment">→ 使能I-Cache，提升指令吞吐</span>
+HAL_Init()                   <span class="code-comment">→ SysTick、HAL全局初始化</span>
+SystemClock_Config()         <span class="code-comment">→ HSE 24M → PLL → SYSCLK 550MHz</span>
+MX_GPIO_Init()               <span class="code-comment">→ PA0(按键输入) / PA2(LED输出)</span>
+MX_USART10_UART_Init()       <span class="code-comment">→ 舵机总线 115200 8N1</span>
+MX_SPI6_Init()               <span class="code-comment">→ WS2812 SPI 主模式</span>
+MX_UART7_Init()              <span class="code-comment">→ 调试串口 115200 8N1</span>
+HAL_Delay(500)               <span class="code-comment">→ ⚠️ 等待舵机上电完成</span>
+HAL_UART_Transmit(huart7)    <span class="code-comment">→ 直发"Hello, UART!"（通信验证）</span>
+printf("UART Started!!")     <span class="code-comment">→ 走fputc→huart7</span>
+STS3215_Init()               <span class="code-comment">→ setEnd(小端) + Find_STS3215()扫描ID 11~16</span>
+HAL_Delay(1000)              <span class="code-comment">→ 等待扫描完成</span></code></pre>
+  </details>
+  <details>
+    <summary>主循环逻辑（行 121–129）</summary>
+    <pre><code><span class="code-keyword">while</span>(1) {
+    WS2812_Run();              <span class="code-comment">// SPI发送RGB + 两次随机延时(0~100ms)</span>
+    Get_Button_State();        <span class="code-comment">// 轮询按键，按下后阻塞1000ms点亮LED</span>
+    STS3215_Get_AllPos_Status(); <span class="code-comment">// 循环读取ID 11~16位置，格式化打印</span>
+}</code></pre>
+    <div class="alert">
+      <b>⚠️ 设计注意：</b>
+      <code>WS2812_Run()</code> 含两次 <code>HAL_Delay(rand_0_100())</code>，
+      <code>Get_Button_State()</code> 含阻塞轮询 + <code>HAL_Delay(1000)</code>，
+      主循环实时性差，不适合精确运动控制。
+    </div>
+  </details>
+
+  <!-- ── STS3215_INST.h ── -->
+  <h3>2.3 <code>Device/STS3215/STS3215_INST.h</code> — 协议指令定义</h3>
+  <details open>
+    <summary>波特率常量与指令码</summary>
+    <pre><code><span class="code-comment">// 波特率寄存器值（写入舵机EEPROM寄存器6）</span>
+#define SCS_1M      0    <span class="code-comment">// 1 Mbps</span>
+#define SCS_0_5M    1    <span class="code-comment">// 500 Kbps</span>
+#define SCS_250K    2    <span class="code-comment">// 250 Kbps</span>
+#define SCS_115200  4    <span class="code-comment">// 115200 bps  ← 当前使用</span>
+
+<span class="code-comment">// 指令码</span>
+#define INST_PING       0x01   <span class="code-comment">// 查询舵机在线，返回ID</span>
+#define INST_READ       0x02   <span class="code-comment">// 读内存寄存器</span>
+#define INST_WRITE      0x03   <span class="code-comment">// 写内存寄存器（立即执行）</span>
+#define INST_REG_WRITE  0x04   <span class="code-comment">// 写入缓存（等待ACTION触发）</span>
+#define INST_REG_ACTION 0x05   <span class="code-comment">// 触发REG_WRITE缓存执行</span>
+#define INST_SYNC_READ  0x82   <span class="code-comment">// 广播：批量读多个舵机</span>
+#define INST_SYNC_WRITE 0x83   <span class="code-comment">// 广播：批量写多个舵机（6轴联动核心）</span>
+#define INST_RESET      0x0A   <span class="code-comment">// 复位（清除圈数/多圈计数）</span>
+#define INST_OFSCAL     0x0B   <span class="code-comment">// 中位校准（代码中未直接使用）</span></code></pre>
+  </details>
+
+  <!-- ── STS3215_Interface.c ── -->
+  <h3>2.4 <code>Device/STS3215/STS3215_Interface.c</code> — 协议封包/拆包层</h3>
+  <details>
+    <summary>关键函数一览表</summary>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>函数</th><th>职责</th><th>要点</th></tr></thead>
+        <tbody>
+          <tr><td><code>Host2SCS()</code> L64</td><td>16位→2×8位</td><td>按 <code>End</code> 变量切换大/小端；<code>End=0</code> 小端</td></tr>
+          <tr><td><code>SCS2Host()</code> L77</td><td>2×8位→16位</td><td>与上面互逆，用于接收解析</td></tr>
+          <tr><td><code>writeBuf()</code> L93</td><td>构造并缓存帧头</td><td>写入 <code>0xFF 0xFF ID Len Fun [MemAddr]</code> 到软件缓冲</td></tr>
+          <tr><td><code>genWrite()</code> L128</td><td>WRITE 立即写</td><td><code>rFlush→writeBuf→wFlush→Ack()</code></td></tr>
+          <tr><td><code>regWrite()</code> L138</td><td>REG_WRITE 异步写</td><td>同上但用 <code>INST_REG_WRITE</code>，等待 <code>regAction</code> 触发</td></tr>
+          <tr><td><code>syncWrite()</code> L157</td><td>同步写核心</td><td>广播ID=0xFE，一帧携带所有舵机参数，无应答等待</td></tr>
+          <tr><td><code>Read()</code> L212</td><td>单舵机读取</td><td>发READ帧→等帧头→读3字节头→读数据→读校验→比对</td></tr>
+          <tr><td><code>Ping()</code> L286</td><td>在线检测</td><td>完整帧收发 + 校验流程</td></tr>
+          <tr><td><code>checkHead()</code> L355</td><td>帧头同步</td><td>循环读字节，滑动检测 <code>0xFF 0xFF</code>，最多 10 次</td></tr>
+          <tr><td><code>Ack()</code> L378</td><td>应答解析</td><td>收 4 字节(ID+Len+Status+Checksum)并校验</td></tr>
+          <tr><td><code>syncReadPacketTx()</code> L411</td><td>同步读发送</td><td>广播 SYNC_READ 帧，一次性读取所有应答到 <code>syncReadRxBuff</code></td></tr>
+          <tr><td><code>syncReadPacketRx()</code> L451</td><td>同步读解析</td><td>在缓冲区中搜索各舵机应答包并逐一解析</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details>
+    <summary>大小端处理 &amp; 校验和算法</summary>
+    <pre><code><span class="code-comment">// STS3215_Interface.c 行 17–18</span>
+<span class="code-keyword">static</span> uint8_t End = 0; <span class="code-comment">// 默认小端</span>
+<span class="code-comment">// STS3215_Init() 调用 setEnd(STS3215_End=0) → 小端模式</span>
+<span class="code-comment">// 小端：低字节地址低，与 STS3215 寄存器格式一致</span>
+
+<span class="code-comment">// 校验和算法（行 114–122）</span>
+CheckSum = ~(ID + Length + Instruction + MemAddr + Data[0] + ... + Data[N-1]);
+<span class="code-comment">// 取反后低8位，溢出自动截断</span></code></pre>
+  </details>
+
+  <!-- ── STS3215_comm.c ── -->
+  <h3>2.5 <code>Device/STS3215/STS3215_comm.c</code> — 底层串口收发层</h3>
+  <details>
+    <summary>分层架构说明</summary>
+    <div class="flow-box">Layer 1 (应用绑定):
+  fputc()       → printf → huart7       (调试)
+  ftUart_Send() → HAL_UART_Transmit(huart10)  (舵机TX)
+  ftUart_Read() → HAL_UART_Receive(huart10)   (舵机RX)
+  ftBus_Delay() → HAL_Delay(1) ≈ 1ms
+
+Layer 2 (软件缓冲):
+  wBuf[128]      全局发送缓冲区 (行 86)
+  writeSCS()     写入wBuf，缓冲满时auto-flush (行 97)
+  writeByteSCS() 单字节写入wBuf (行 116)
+  wFlushSCS()    将wBuf一次性发送并清零 (行 139)
+  rFlushSCS()    用timeout=0的HAL_UART_Receive循环清空RX (行 126)
+  readSCS()      直接调用ftUart_Read (行 91)</div>
+    <ul>
+      <li><strong>无 DMA</strong>：全部使用阻塞式 <code>HAL_UART_Transmit/Receive</code>，超时 100 ms</li>
+      <li><strong>软件发送缓冲</strong>：<code>wBuf[128]</code> 将零散写操作聚合为一次 UART 发送，减少总线空闲间隙</li>
+      <li><strong>接收无缓冲</strong>：<code>readSCS()</code> 直接阻塞接收，超时 100 ms 后返回 0</li>
+      <li><strong>printf 重定向</strong>（行 12–16）：<code>fputc</code> → <code>HAL_UART_Transmit(&amp;huart7, ...)</code> 100 ms 超时</li>
+    </ul>
+    <div class="alert">
+      <b>⚠️</b> <code>ftBus_Delay()</code> 设置为 <code>HAL_Delay(1)</code> = 1 ms（行 71），
+      远大于协议要求的 &gt;10 µs，会显著降低总线利用率（浪费约 990 µs / 次）。
+    </div>
+  </details>
+
+  <!-- ── STS3215_control.c ── -->
+  <h3>2.6 <code>Device/STS3215/STS3215_control.c</code> — 控制 API 层</h3>
+  <details>
+    <summary>函数清单与调用关系</summary>
+    <pre><code>STS3215_Init()
+├── setEnd(0)                              <span class="code-comment">→ STS3215_Interface.c</span>
+└── Find_STS3215()
+    └── Ping(i) for i=11..16              <span class="code-comment">→ STS3215_Interface.c</span>
+
+STS3215_SetPosEx(ID, Position, Speed, ACC)
+├── 组装7字节: [ACC, PosL, PosH, 0, 0, SpdL, SpdH]
+└── genWrite(ID, SMS_STS_ACC=41, buf, 7)  <span class="code-comment">→ 立即执行</span>
+
+STS3215_SetPosEx_Reg(ID, Position, Speed, ACC)
+└── regWrite(ID, SMS_STS_ACC=41, buf, 7)  <span class="code-comment">→ 写缓存，等待Action</span>
+
+STS3215_SetPosEx_Sync(ID[], IDN, Position[], Speed[], ACC[])
+└── syncWrite(ID[], IDN, SMS_STS_ACC=41, offbuf, 7) <span class="code-comment">→ 广播写全部舵机</span>
+
+STS3215_WheelMode(ID)
+└── writeByte(ID, SMS_STS_MODE=33, 1)     <span class="code-comment">→ 恒速模式</span>
+
+STS3215_SetSpeed_WheelMode(ID, Speed, ACC)
+└── genWrite(ID, SMS_STS_ACC=41, buf, 7)
+
+STS3215_CalibrationOfs(ID)
+└── writeByte(ID, SMS_STS_TORQUE_ENABLE=40, 128) <span class="code-comment">→ 中位校准触发</span>
+
+STS3215_unLockEPROMEx(ID) → writeByte(ID, SMS_STS_LOCK=55, 0)
+STS3215_LockEPROMEx(ID)   → writeByte(ID, SMS_STS_LOCK=55, 1)</code></pre>
+  </details>
+
+  <!-- ── test.c ── -->
+  <h3>2.7 <code>Core/Src/test.c</code> — UART7 调试回显工具</h3>
+  <details>
+    <summary>设计思路详解</summary>
+    <ul>
+      <li>采用<strong>单字节中断接收</strong>模式（<code>HAL_UART_Receive_IT</code> 每次 1 字节）</li>
+      <li><code>HAL_UART_RxCpltCallback()</code>（行 28）：存字节 → 遇 <code>'@'</code> 或缓冲满则置 <code>packet_ready=1</code> → 重新挂起下次中断</li>
+      <li><code>uartPort_test_loop()</code>（行 47）：主循环轮询 <code>packet_ready</code>，用 <code>HAL_UART_Transmit</code> 回显</li>
+      <li><code>'@'</code> 作为数据包结束符（行 37）</li>
+    </ul>
+    <div class="alert">
+      <b>⚠️ 注意：</b> <code>test.c</code> 中的 <code>HAL_UART_RxCpltCallback</code> 与
+      <code>usart.c</code> 注释掉的相关代码（行 250–261）都指向同一 HAL 全局回调，
+      <strong>只能注册一个</strong>，无法同时用于 UART7 调试测试和 USART10 舵机中断接收，
+      体现了设计阶段的临时性。
+    </div>
+  </details>
+  <a class="back-top" href="#top">↑ 返回目录</a>
+</section>
+
+<!-- ═══════════════════════ SECTION 3 ═══════════════════════ -->
+<section id="sec3">
+  <h2>三、通信协议深度剖析</h2>
+
+  <h3>3.1 FEETECH STS3215 指令帧结构（根据代码还原）</h3>
+
+  <h4>发送帧（主机 → 舵机）</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>字节偏移</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6..N</th><th>N+1</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>内容</strong></td>
+          <td><code>0xFF</code></td><td><code>0xFF</code></td>
+          <td>ID</td><td>Length</td><td>Instr</td><td>MemAddr</td>
+          <td>Data[0..]</td><td>~CheckSum</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li><strong>帧头</strong>：固定 <code>0xFF 0xFF</code>（<code>writeBuf()</code> 行 99–100）</li>
+    <li><strong>ID</strong>：目标舵机 ID（1~253）；广播 = <code>0xFE</code></li>
+    <li><strong>Length</strong>：后续字节数 = 参数字节数 + 2（含 Instr 和 CheckSum）</li>
+    <li><strong>~CheckSum</strong>：<code>~(ID + Length + Instr + MemAddr + Data[0..N-1])</code> 低 8 位取反</li>
+  </ul>
+
+  <h4>应答帧（舵机 → 主机）</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>字节偏移</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5..N</th><th>N+1</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>内容</strong></td>
+          <td><code>0xFF</code></td><td><code>0xFF</code></td>
+          <td>ID</td><td>Length</td><td>Status</td>
+          <td>Data[0..]</td><td>~CheckSum</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>写指令时 Length=2，无数据字节；<code>~CheckSum = ~(ID + Length + Status + Data[0..N-1])</code>（<code>Ack()</code> 行 401 / <code>Read()</code> 行 247）</p>
+
+  <h3>3.2 指令表</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>指令名</th><th>宏常量</th><th>值</th><th>帧 ID</th><th>应答</th><th>代码位置</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>PING</code></td><td><code>INST_PING</code></td><td><code>0x01</code></td><td>单播</td><td>✅ 返回ID</td><td><code>Ping()</code> L286</td><td>检测在线</td></tr>
+        <tr><td><code>READ</code></td><td><code>INST_READ</code></td><td><code>0x02</code></td><td>单播</td><td>✅ 返回数据</td><td><code>Read()</code> L212</td><td>读寄存器</td></tr>
+        <tr><td><code>WRITE</code></td><td><code>INST_WRITE</code></td><td><code>0x03</code></td><td>单播</td><td>✅ 状态帧</td><td><code>genWrite()</code> L128</td><td>立即写寄存器</td></tr>
+        <tr><td><code>REG_WRITE</code></td><td><code>INST_REG_WRITE</code></td><td><code>0x04</code></td><td>单播</td><td>✅ 状态帧</td><td><code>regWrite()</code> L138</td><td>写入缓存待触发</td></tr>
+        <tr><td><code>REG_ACTION</code></td><td><code>INST_REG_ACTION</code></td><td><code>0x05</code></td><td>单播/广播</td><td>✅</td><td><code>regAction()</code> L147</td><td>触发缓存写</td></tr>
+        <tr><td><code>SYNC_READ</code></td><td><code>INST_SYNC_READ</code></td><td><code>0x82</code></td><td>广播 0xFE</td><td>✅ 各舵机分别回</td><td><code>syncReadPacketTx()</code> L411</td><td>批量读</td></tr>
+        <tr><td><code>SYNC_WRITE</code></td><td><code>INST_SYNC_WRITE</code></td><td><code>0x83</code></td><td>广播 0xFE</td><td>❌ 不期望应答</td><td><code>syncWrite()</code> L157</td><td>批量写（6轴联动核心）</td></tr>
+        <tr><td><code>RESET</code></td><td><code>INST_RESET</code></td><td><code>0x0A</code></td><td>单播</td><td>✅ 状态帧</td><td><code>Reset()</code> L321</td><td>清除多圈计数</td></tr>
+        <tr><td><code>OFSCAL</code></td><td><code>INST_OFSCAL</code></td><td><code>0x0B</code></td><td>单播</td><td>—</td><td>仅定义，未调用</td><td>中位自动校准</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.3 SYNC_WRITE 相比逐一 WRITE 的优势（6 轴联动场景）</h3>
+  <div class="flow-box">逐一 WRITE（6次）：
+  ─[Write ID11]──[ACK11]──[Write ID12]──[ACK12]──...──[Write ID16]──[ACK16]─►
+  总时间 = 6 × T_frame，最后一轴比第一轴延迟约 5×T_frame
+
+SYNC_WRITE（1次广播）：
+  ─[SyncWrite 0xFE, ALL 6 servos in ONE packet]──────────────────────────────►
+  总时间 = 1 × T_frame（无应答等待），所有舵机同一时刻收到指令</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>维度</th><th>WRITE × 6</th><th>SYNC_WRITE</th></tr></thead>
+      <tbody>
+        <tr><td>总线占用时间</td><td>O(N)</td><td>O(1)</td></tr>
+        <tr><td>舵机启动时序一致性</td><td>逐个延迟 ~T_frame</td><td>几乎同时（&lt;1 个位周期抖动）</td></tr>
+        <tr><td>应答开销</td><td>需等 6 个 ACK</td><td>无应答，无等待</td></tr>
+        <tr><td>关节抖动（jitter）</td><td>可达几十 ms</td><td>接近零</td></tr>
+        <tr><td>总线效率</td><td>低（每帧 6 次完整往返）</td><td>高（1 帧含所有数据）</td></tr>
+        <tr><td>同步启动</td><td>❌ 不同步</td><td>✅ 同步</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>代码体现（<code>STS3215_control.c</code> 行 96–129）：<code>STS3215_SetPosEx_Sync()</code> 将所有舵机的
+    ACC+Position+Time+Speed 打包为 <code>offbuf[IDN*7]</code>，一次 <code>syncWrite()</code> 广播，
+    所有舵机<strong>同帧触发运动</strong>。</p>
+  <a class="back-top" href="#top">↑ 返回目录</a>
+</section>
+
+<!-- ═══════════════════════ SECTION 4 ═══════════════════════ -->
+<section id="sec4">
+  <h2>四、硬件交互与调试设计</h2>
+
+  <h3>4.1 UART10 舵机 + UART7 调试分离的工程价值</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>对比维度</th><th>合用单串口</th><th>分离双串口</th></tr></thead>
+      <tbody>
+        <tr><td>调试时干扰</td><td>调试输出污染舵机总线</td><td>完全隔离</td></tr>
+        <tr><td>实时性</td><td>printf 会延迟舵机帧</td><td>互不影响</td></tr>
+        <tr><td>波特率冲突</td><td>舵机 1Mbps vs 调试 115200</td><td>各自最优配置</td></tr>
+        <tr><td>调试友好性</td><td>需要过滤/协议分析</td><td>直接可读 ASCII</td></tr>
+        <tr><td>故障定位</td><td>难以区分是哪路问题</td><td>清晰对应</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>4.2 USART10 配置详解</h3>
+  <details>
+    <summary>usart.c 行 84–110 关键配置</summary>
+    <pre><code>huart10.Init.BaudRate = 115200;          <span class="code-comment">// ⚠️ 非1Mbps，舵机须配置为同波特率</span>
+huart10.Init.OverSampling = UART_OVERSAMPLING_16;  <span class="code-comment">// 标准16x过采样</span>
+huart10.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;  <span class="code-comment">// 三样本多数决，更抗噪</span>
+huart10.Init.Mode = UART_MODE_TX_RX;     <span class="code-comment">// 全双工，无半双工控制</span>
+<span class="code-comment">// GPIO: PE2(RX) AF4_USART10 / PE3(TX) AF11_USART10</span>
+<span class="code-comment">// 均配置为 GPIO_SPEED_FREQ_LOW（115200 bps 足够）</span>
+<span class="code-comment">// FIFO 已禁用（HAL_UARTEx_DisableFifoMode，行 107）</span>
+<span class="code-comment">// NVIC 已使能（行 197–198），但代码未使用 ISR 驱动舵机接收</span></code></pre>
+  </details>
+  <div class="alert">
+    <b>注意：</b> 当前波特率为 <strong>115200</strong>，与 STS3215 默认出厂波特率（1 Mbps）不同，
+    须舵机已预先配置为 115200（对应 <code>SCS_115200=4</code>）。
+    无半双工切换引脚，RX/TX 独立（PE2/PE3），与舵机连接时需关注总线拓扑。
+  </div>
+
+  <h3>4.3 其他外设</h3>
+
+  <h4>WS2812 RGB LED（<code>Device/ws2812.c</code>）</h4>
+  <ul>
+    <li>使用 SPI6 主模式 TX-only（PA5=SCK, PA7=MOSI），<code>SPI_PHASE_2EDGE</code></li>
+    <li>SPI 速率 ≈ 4.297 MHz（137.5 MHz / 32）</li>
+    <li>每个 WS2812 bit 用 8 个 SPI bit 编码：<code>0x60</code>（0码）、<code>0x78</code>（1码），经 <code>&gt;&gt;1</code> 移位写入</li>
+    <li>复位脉冲：发送 100 字节 <code>0x00</code>（行 61–64）</li>
+    <li><code>WS2812_Run()</code> 随机色循环，含两次 <code>rand_0_100()</code> ms 随机延时 → <strong>对主循环实时性有较大影响</strong></li>
+  </ul>
+
+  <h4>按键与 LED（<code>Device/Button_switch.c</code>，<code>Core/Src/gpio.c</code>）</h4>
+  <ul>
+    <li>PA0：按键输入，上拉，低电平有效（<code>GPIO_PIN_RESET</code>）</li>
+    <li>PA2：LED 输出，上拉，初始低电平</li>
+    <li><code>Get_Button_State()</code>：检测 PA0 低电平 → 消抖等待释放（busy-wait）→ 打印 → PA2 高（亮）1000 ms → PA2 低（灭）</li>
+  </ul>
+
+  <h3>4.4 启动等待 <code>HAL_Delay(500)</code> 的工程原因</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>原因</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>舵机电源稳定</td><td>舵机独立供电，大电容充电需时间，未稳定时寄存器未就绪</td></tr>
+        <tr><td>舵机上电复位</td><td>STS3215 内部 MCU 需完成自检、EEPROM 加载、通信初始化</td></tr>
+        <tr><td>避免总线冲突</td><td>舵机上电瞬间总线可能输出不确定电平，干扰主控接收</td></tr>
+        <tr><td>提升 Find_STS3215() 可靠性</td><td>500 ms 后所有舵机均已处于应答就绪状态，Ping 成功率高</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>随后在 <code>STS3215_Init()</code> 结束后还有 <code>HAL_Delay(1000)</code>（<code>main.c</code> 行 116），
+    进一步确保舵机扫描完成。</p>
+  <a class="back-top" href="#top">↑ 返回目录</a>
+</section>
+
+<!-- ═══════════════════════ SECTION 5 ═══════════════════════ -->
+<section id="sec5">
+  <h2>五、工程实践评价</h2>
+
+  <h3>5.1 优点</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>方面</th><th>具体体现</th></tr></thead>
+      <tbody>
+        <tr><td>双串口分离架构</td><td>调试与控制完全隔离，工程实践合理</td></tr>
+        <tr><td>模块化分层</td><td>comm → Interface → control/status，层次清晰</td></tr>
+        <tr><td>软件发送缓冲</td><td><code>wBuf[128]</code> 聚合碎片写，减少总线间隙</td></tr>
+        <tr><td>完整协议支持</td><td>PING/READ/WRITE/SYNC_READ/SYNC_WRITE/REG_WRITE/ACTION/RESET 全部实现</td></tr>
+        <tr><td>代码来源注释</td><td>明确标注各段代码来源（SCS.c/SCSerial.c/SMS_STS.c），可溯源</td></tr>
+        <tr><td>配置文件完整</td><td><code>.ioc</code> / <code>.uvprojx</code> / <code>launch.json</code> 便于复现和协作</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>5.2 已确认 Bug</h3>
+
+  <details open>
+    <summary>🐛 Bug 1：<code>Find_STS3215()</code> 死代码（STS3215_control.c 行 42–46）</summary>
+    <pre><code><span class="code-keyword">if</span> (ID >= 0) { ... }
+<span class="code-keyword">else if</span> (ID >= 0) { ... }  <span class="code-comment">// ← 永远不会执行，条件与上面相同</span>
+<span class="code-keyword">else</span> { ... }</code></pre>
+    <div class="alert alert-danger"><b>影响：</b>重试逻辑失效，无法在首次 Ping 失败时重试。</div>
+  </details>
+
+  <details open>
+    <summary>🐛 Bug 2：<code>STS3215_status.c</code> 缓存路径字节序错误（行 78–82 等）</summary>
+    <pre><code><span class="code-comment">// ReadPos 缓存路径（ID==-1）错误示例：</span>
+Pos = Mem[0];   <span class="code-comment">// = POSITION_L（低字节）</span>
+Pos &lt;&lt;= 8;
+Pos |= Mem[1];  <span class="code-comment">// = POSITION_H（高字节）</span>
+<span class="code-comment">// 结果：(L&lt;&lt;8)|H → 高低字节互换！应为 (H&lt;&lt;8)|L</span>
+<span class="code-comment">// ReadCurrent 却是正确的（先取H再取L）</span></code></pre>
+    <div class="alert alert-danger"><b>影响：</b>仅影响通过 <code>FeedBack()</code> 批量读后使用缓存的路径（<code>ID==-1</code>）；直接调用 <code>readWord()</code> 的路径（行 83）无此问题。</div>
+  </details>
+
+  <details open>
+    <summary>🐛 Bug 3：<code>STS3215_SetPosEx_Sync()</code> printf 格式串错误（行 130）</summary>
+    <pre><code>printf(<span class="code-string">"...: ID=%d, Position=%d, Speed=%d, ACC=%d\r\n"</span>, ID, Position, Speed, ACC);
+<span class="code-comment">// ID 是 uint8_t[]（数组指针），Position/Speed/ACC 是数组指针
+// 将指针当整数打印 → 行为未定义</span></code></pre>
+  </details>
+
+  <details>
+    <summary>🐛 Bug 4：拼写错误 <code>syncReadRxPacketToWrod()</code>（Interface.h 行 35）</summary>
+    <p><code>Wrod</code> 应为 <code>Word</code>，出现在 <code>STS3215_Interface.h</code> 行 35 和 <code>STS3215_Interface.c</code> 行 500。</p>
+  </details>
+
+  <h3>5.3 设计风险点</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>风险</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>全局 <code>wBuf</code> 非线程安全</td><td>若引入 RTOS 则多任务并发会破坏缓冲区</td></tr>
+        <tr><td>无超时错误码体系</td><td><code>u8Error</code> 只有 4 个码，缺少分层错误传播</td></tr>
+        <tr><td>阻塞串口 100 ms 超时</td><td>每帧最坏情况等待 100 ms，主循环可能卡住</td></tr>
+        <tr><td><code>Error_Handler()</code> 挂死</td><td>出错后 <code>__disable_irq()</code> + 死循环，无日志、无恢复</td></tr>
+        <tr><td>主循环含随机延时</td><td><code>WS2812_Run()</code> 延时 0~200 ms，舵机状态查询节率不稳定</td></tr>
+        <tr><td><code>HAL_Delay(1)</code> 总线延时</td><td>应为 &gt;10 µs，实际 1 ms，每次操作多浪费约 990 µs</td></tr>
+        <tr><td><code>syncReadRxBuff</code> 用 <code>malloc</code></td><td>嵌入式环境频繁动态内存分配有碎片风险</td></tr>
+        <tr><td>ID 扫描范围硬编码</td><td><code>Find_STS3215()</code> 固定扫 11~16，无法通过配置更改</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>5.4 可执行改进建议</h3>
+
+  <h4>短期（Bug 修复）</h4>
+  <ul>
+    <li>修复 <code>Find_STS3215()</code> 中的死代码（<code>else if (ID &gt;= 0)</code> 改为 <code>else if (retry &lt; 3)</code>）</li>
+    <li>修复 <code>ReadPos/ReadSpeed/ReadLoad</code> 缓存路径的字节序（改用 <code>SCS2Host(Mem[L_off], Mem[H_off])</code>）</li>
+    <li>修复 <code>STS3215_SetPosEx_Sync()</code> 中的 printf 格式错误</li>
+    <li>修正 <code>syncReadRxPacketToWrod</code> 拼写</li>
+  </ul>
+
+  <h4>中期（架构改善）</h4>
+  <ul>
+    <li><strong>分层错误码</strong>：定义 <code>typedef enum STS_Result_t { STS_OK=0, STS_ERR_TIMEOUT, STS_ERR_CRC, STS_ERR_ID, ... }</code>，所有函数统一返回</li>
+    <li><strong>DMA + IDLE 接收</strong>：用 <code>HAL_UARTEx_ReceiveToIdle_DMA()</code> 替代阻塞接收，大幅提升吞吐</li>
+    <li><strong>状态机化总线管理</strong>：TX → 等待 turnaround → RX，替代当前的顺序阻塞调用</li>
+    <li><strong><code>ftBus_Delay()</code> 精确化</strong>：改用 <code>DWT-&gt;CYCCNT</code> 或 TIM 实现 10 µs 精确延时</li>
+    <li><strong>去掉主循环随机延时</strong>：<code>WS2812_Run()</code> 改为定时器中断驱动，与舵机控制解耦</li>
+  </ul>
+
+  <h4>长期（工程化提升）</h4>
+  <ul>
+    <li><strong>宏改枚举/结构体</strong>：寄存器地址用 <code>typedef struct STS3215_Regs</code> 代替散乱 <code>#define</code></li>
+    <li><strong>参数范围校验</strong>：位置 0~4095，速度 0~3400 等在 API 入口检查</li>
+    <li><strong>单元测试框架</strong>：移植 CppUTest 或 Unity 对协议封包/解包做 host-side 测试</li>
+    <li><strong>动态 ID 配置</strong>：<code>Find_STS3215()</code> 扫描范围做成参数，结果存入全局 ID 列表</li>
+    <li><strong>日志分级</strong>：<code>LOG_DEBUG/LOG_INFO/LOG_ERROR</code> 宏，可通过编译开关关闭调试输出</li>
+    <li><strong>环形缓冲健壮性</strong>：<code>test.c</code> 中 <code>uart_rx_idx</code> 加临界区保护（<code>__disable_irq/__enable_irq</code>）</li>
+  </ul>
+
+  <h3>5.5 推荐学习路径</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>阶段</th><th>文件</th><th>目的</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>阶段一</strong><br>了解整体架构</td>
+          <td>
+            <code>README(zh).md</code><br>
+            <code>.ioc</code><br>
+            <code>Core/Src/usart.c</code>
+          </td>
+          <td>了解项目目标和接线；芯片型号和外设分配；两路串口配置差异</td>
+        </tr>
+        <tr>
+          <td><strong>阶段二</strong><br>理解协议层</td>
+          <td>
+            <code>Device/STS3215/STS3215_INST.h</code><br>
+            <code>Device/STS3215/STS3215_comm.c</code><br>
+            <code>STS3215_Interface.c</code> 前半段
+          </td>
+          <td>掌握所有指令码和寄存器地址；底层 UART 收发和软件缓冲；封包和大小端</td>
+        </tr>
+        <tr>
+          <td><strong>阶段三</strong><br>深入控制流程</td>
+          <td>
+            <code>STS3215_Interface.c</code> 后半段<br>
+            <code>STS3215_control.c</code><br>
+            <code>STS3215_status.c</code>
+          </td>
+          <td>完整读写流程；上层 API 与协议层映射；状态回读与 FeedBack（注意字节序 Bug）</td>
+        </tr>
+        <tr>
+          <td><strong>阶段四</strong><br>掌握系统集成</td>
+          <td>
+            <code>Core/Src/main.c</code><br>
+            <code>Core/Src/test.c</code><br>
+            <code>Device/ws2812.c</code> / <code>Button_switch.c</code>
+          </td>
+          <td>初始化顺序和主循环调度；调试工具中断回调模式；辅助外设驱动模式</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="back-top" href="#top">↑ 返回目录</a>
+</section>
+
+</div><!-- /container -->
+
+<footer>
+  <p>代码走查基于仓库快照（2026-04-29）· 所有引用均附有文件名与行号 · 作者：Nous3508</p>
+</footer>
+
+</body>
+</html>
