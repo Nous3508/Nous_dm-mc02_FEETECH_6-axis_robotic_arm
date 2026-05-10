@@ -83,6 +83,64 @@
 - 机械臂动作编排
 - 回零与姿态控制
 
+## STS3215 代码说明
+
+项目中的 STS3215 相关代码主要分为 4 层：通信层、控制层、状态层和协议定义层，分别对应 `Device/STS3215/` 目录下的不同文件。
+
+### 1. 通信层：STS3215_comm.c / STS3215_comm.h
+
+这一层负责和舵机总线进行字节级收发，核心作用是把 HAL 串口收发封装成 STS3215 协议可用的接口。
+
+- `ftUart_Send()`：发送舵机指令数据
+- `ftUart_Read()`：接收舵机应答数据
+- `ftBus_Delay()`：总线切换延时，保证收发切换时序正确
+- `readSCS()` / `writeSCS()` / `writeByteSCS()`：协议底层的读写接口
+- `rFlushSCS()` / `wFlushSCS()`：刷新接收和发送缓冲区
+
+这一层一般不直接关心“控制什么动作”，只负责把数据准确发出去、把舵机返回的数据正确收回来。
+
+### 2. 协议与控制层：STS3215_control.c / STS3215_control.h
+
+这一层负责把“目标位置、速度、加速度、模式切换”等控制需求，转换成 STS3215 舵机能识别的协议命令。
+
+- `STS3215_Init()`：初始化舵机协议环境，并执行一次舵机搜索
+- `Find_STS3215()`：在总线上扫描舵机 ID，并打印在线设备
+- `STS3215_SetPosEx()`：普通位置控制，适合单个舵机直接运动
+- `STS3215_SetPosEx_Reg()`：异步写位置指令，适合需要批量预写后统一执行的场景
+- `STS3215_SetPosEx_Sync()`：同步写多个舵机的位置，适合机械臂联动
+- `STS3215_WheelMode()`：切换到恒速模式
+- `STS3215_SetSpeed_WheelMode()`：在恒速模式下控制转速
+- `STS3215_CalibrationOfs()`：中位校准
+- `STS3215_unLockEPROMEx()` / `STS3215_LockEPROMEx()`：解锁或锁定舵机 EEPROM 区
+
+从实现上看，这一层会先把位置、速度、加速度等参数整理成舵机协议需要的字节数组，再调用底层写指令接口发送出去。
+
+### 3. 状态层：STS3215_status.c / STS3215_status.h
+
+这一层负责读取舵机当前状态，用于调试、联调和故障排查。
+
+- `STS3215_Get_AllPos_Status()`：读取多项状态信息
+- `STS3215_ReadStatus()`：按 ID 读取舵机状态
+- `FeedBack()`：读取并处理反馈数据
+- `ReadPos()` / `ReadSpeed()` / `ReadLoad()` / `ReadVoltage()` / `ReadTemper()` / `ReadMove()` / `ReadCurrent()`：分别读取位置、速度、负载、电压、温度、运动状态和电流
+
+这一层适合在调试时查看舵机是否真的执行了指令，也可以用来判断供电、负载或温度是否异常。
+
+### 4. 内存表定义：STS3215_control.h / STS3215_status.h
+
+这两个头文件里定义了 STS3215 的寄存器地址，例如：
+
+- `STS3215_ID`：舵机 ID
+- `STS3215_BAUD_RATE`：波特率
+- `STS3215_GOAL_POSITION_L/H`：目标位置
+- `STS3215_PRESENT_POSITION_L/H`：当前位置
+- `STS3215_PRESENT_SPEED_L/H`：当前速度
+- `STS3215_PRESENT_LOAD_L/H`：当前负载
+- `STS3215_PRESENT_VOLTAGE`：当前电压
+- `STS3215_PRESENT_TEMPERATURE`：当前温度
+
+可以把这些定义理解为“舵机内部寄存器地址表”。上层代码只需要写这些宏名，不需要在业务逻辑里记住具体数值。
+
 ## 通信配置
 
 - **舵机总线串口**：USART10

@@ -1,71 +1,194 @@
 # Nous_dm-mc02_FEETECH_6-axis_robotic_arm
 
-> A playful project to control a 6-axis robotic arm using FEETECH STS3215 serial servos and an STM32H723VGT6. Think of this repo as the brain and heartbeat for the little robot — with firmware, drivers, and test tools.
+This repository contains the firmware for a FEETECH six-axis robotic arm based on the STM32H723VGT6. It is mainly used to drive FEETECH STS3215 serial servos over a serial bus, supporting joint motion control, servo scanning, and basic debugging.
 
-## Quick overview
+## Project Overview
 
-- Platform: STM32H723VGT6
-- Primary toolchains: Keil MDK and VS Code
-- Programmer / Debugger: ST-Link
-- Servo bus: USART10 (PE3 = TX, PE2 = RX)
-- Debug/console: UART7 (PE8 = TX, PE7 = RX)
-- Servo communication: 1,000,000 bps, 8N1
-- License: All rights reserved (no open license)
-- Author: Nous3508
+The project provides the following features:
 
-## What's inside
+- Communication with the FEETECH servo bus through USART10
+- Support for the FEETECH STS3215 serial servo protocol
+- Debug output through UART7 to a serial terminal or PC
+- Servo scanning, communication testing, and status debugging after power-up
+- A basic control foundation for a 6-DOF robotic arm
 
-- `Core/Src/` – main firmware and peripheral initialisation
-- `Device/STS3215/` – FEETECH STS3215 protocol implementation and commios (writeSCS/readSCS and helpers)
-- `Device/` – drivers and hardware helpers (e.g., WS2812 support)
-- `Core/Inc/` – project headers
+## Hardware Platform
 
-## Wiring (important!)
+- Main MCU: STM32H723VGT6
+- Servo model: FEETECH STS3215
+- Development tools: Keil MDK / VS Code
+- Programmer / debugger: ST-Link
+- Firmware library: STM32Cube HAL
 
-Short summary of serial wiring used by the firmware (double-check on your board before powering up):
+## Wiring
 
-- FEETECH servo bus <-> MCU USART10
-  - MCU PE3 (USART10_TX) -> servo RX
-  - MCU PE2 (USART10_RX) <- servo TX
-- Debug / PC console <-> MCU UART7 (USB-Serial)
-  - MCU PE8 (UART7_TX) -> USB-to-PC TX
-  - MCU PE7 (UART7_RX) <- USB-to-PC RX
+### 1. Servo bus wiring (USART10)
 
-Note: if you do a TX↔RX loopback for testing, short PE3 <-> PE2 on the board (only for local tests; disconnect servos first!).
+The robotic arm servos communicate with the MCU through USART10:
 
-## Build & flash
+- PE3 (USART10_TX) -> servo RX
+- PE2 (USART10_RX) <- servo TX
 
-Keil MDK (recommended):
-1. Open the Keil project in the `Project/` folder (or the `.uvprojx`/`.uvproj` file at the repo root). 
-2. Build using the ARMCC toolchain (MDK v5 recommended). 
-3. Flash with ST-Link (in Keil, Connect -> Download).
+### 2. Debug serial wiring (UART7)
 
-VS Code (alternate):
-- Use Cortex-Debug + arm-none-eabi toolchain. Configure `launch.json` for ST-Link and point tasks to the build output. This repo is compatible with VS Code-based workflows but Keil is the primary tested environment.
+Debug information is output through UART7:
 
-## Quick run & tests
+- PE8 (UART7_TX) -> USB-to-serial module RX
+- PE7 (UART7_RX) <- USB-to-serial module TX
 
-1. Power the board and servos. The firmware waits ~1s on startup to let servos boot.
-2. The firmware prints a greeting on the debug console (UART7). Open the serial monitor (115200) to watch logs.
-3. To search for servos, call the `Find_STS3215()` functionality (it runs at startup in current build). It prints discovered IDs.
+### 3. Wiring notes
 
-Manual loopback test (useful when debugging USART10):
-- Short PE3 <-> PE2, run the built firmware and check the console for loopback debug messages.
+- The MCU board and the servos must share a common ground
+- Use a separate and stable power supply for the servos
+- Do not power the servos directly from MCU pins
+- If you perform a PE3 and PE2 loopback test, disconnect the servos first to avoid bus conflicts
+- If communication fails, check the following first:
+  - TX and RX wiring
+  - Common ground
+  - Servo power supply
+  - Serial settings
 
-## Tips & gotchas
+## Features
 
-- If you see garbled bytes or framing errors on USART10 at 1 Mbps, try:
-  - Ensuring PE2/PE3 alternate function is correct and both pins use the same AF.
-  - Setting GPIO speed to VERY_HIGH for the USART pins.
-  - Using Oversampling = 8 and, if necessary, OneBitSampling enable on USART for high baud.
-  - If repeated issues occur, try a lower baud (115200) to verify wiring and then move back to 1 Mbps.
+### 1. Servo communication
 
-- The repo contains temporary debug helpers (e.g., `debug_regs_after_tx`) — feel free to remove or clean them once you confirm your hardware is stable.
+This project supports FEETECH STS3215 serial servo communication for:
 
-## Contributing
+- Writing target position
+- Setting speed
+- Setting acceleration
+- Reading servo position, speed, load, voltage, temperature, current, and other status data
 
-PRs and issues are welcome — though this project currently retains All Rights Reserved. Please open issues for bugs or feature requests and include logs / serial dumps where possible.
+### 2. Servo scanning
 
-## Contact
+After startup, the firmware can scan the servo bus to detect which servos are online and print their IDs.
+
+By default, it scans a range of IDs to help confirm that each joint of the arm is connected correctly.
+
+### 3. Debug output
+
+The firmware prints logs through UART7, which is useful for:
+
+- Checking startup status
+- Verifying communication success
+- Debugging servo connections
+- Inspecting scan results and error messages
+
+### 4. Basic robotic arm control
+
+This project can serve as a base for 6-axis robotic arm control and can be extended later for:
+
+- Joint angle control
+- Multi-servo synchronized motion
+- Arm motion sequencing
+- Homing and pose control
+
+## STS3215 Code Explanation
+
+The STS3215-related code in this project is organized into four layers: communication, control, status, and protocol definitions. They correspond to different files under Device/STS3215/.
+
+### 1. Communication Layer: STS3215_comm.c / STS3215_comm.h
+
+This layer handles byte-level communication with the servo bus and wraps the HAL UART interfaces into functions that the STS3215 protocol can use.
+
+- ftUart_Send(): sends servo command data
+- ftUart_Read(): receives servo response data
+- ftBus_Delay(): bus switching delay to keep the transmit/receive timing correct
+- readSCS() / writeSCS() / writeByteSCS(): low-level protocol read/write interfaces
+- rFlushSCS() / wFlushSCS(): clears the receive and transmit buffers
+
+This layer does not care about the actual motion being controlled. Its only job is to make sure the data is sent and received correctly.
+
+### 2. Protocol and Control Layer: STS3215_control.c / STS3215_control.h
+
+This layer converts control requests such as target position, speed, acceleration, and mode switching into commands that the STS3215 servo can understand.
+
+- STS3215_Init(): initializes the servo protocol environment and performs a servo scan
+- Find_STS3215(): scans servo IDs on the bus and prints the devices that respond
+- STS3215_SetPosEx(): standard position control for moving a single servo directly
+- STS3215_SetPosEx_Reg(): deferred position write for batching commands before execution
+- STS3215_SetPosEx_Sync(): synchronized position write for multiple servos, useful for robotic arm motion
+- STS3215_WheelMode(): switches to wheel mode
+- STS3215_SetSpeed_WheelMode(): controls speed in wheel mode
+- STS3215_CalibrationOfs(): center offset calibration
+- STS3215_unLockEPROMEx() / STS3215_LockEPROMEx(): unlocks or locks the servo EEPROM area
+
+In practice, this layer first packs position, speed, and acceleration into the byte arrays required by the servo protocol, then sends the command through the lower-level write interface.
+
+### 3. Status Layer: STS3215_status.c / STS3215_status.h
+
+This layer reads servo status for debugging, tuning, and fault diagnosis.
+
+- STS3215_Get_AllPos_Status(): reads multiple status values
+- STS3215_ReadStatus(): reads servo status by ID
+- FeedBack(): reads and processes feedback data
+- ReadPos() / ReadSpeed() / ReadLoad() / ReadVoltage() / ReadTemper() / ReadMove() / ReadCurrent(): read position, speed, load, voltage, temperature, motion state, and current
+
+This layer is useful when checking whether the servo really executed a command, or when diagnosing power, load, or temperature problems.
+
+### 4. Memory Table Definitions: STS3215_control.h / STS3215_status.h
+
+These header files define the STS3215 register addresses, such as:
+
+- STS3215_ID: servo ID
+- STS3215_BAUD_RATE: baud rate
+- STS3215_GOAL_POSITION_L/H: target position
+- STS3215_PRESENT_POSITION_L/H: current position
+- STS3215_PRESENT_SPEED_L/H: current speed
+- STS3215_PRESENT_LOAD_L/H: current load
+- STS3215_PRESENT_VOLTAGE: current voltage
+- STS3215_PRESENT_TEMPERATURE: current temperature
+
+You can think of these definitions as the servo's internal register address map. The upper-level code only needs to use these names instead of remembering the raw numeric values.
+
+## Communication Settings
+
+- Servo bus: USART10
+- Debug serial: UART7
+- Servo communication parameters: 115200, 8N1
+- Output: serial logs plus servo status information
+
+## Usage
+
+1. Make sure the hardware wiring is correct
+2. Power on the MCU board and the servos
+3. Download the firmware to the development board
+4. Open the debug serial port and view the logs
+5. Watch the servo scan and communication output to confirm normal operation
+
+## Common Issues
+
+### 1. Servos do not respond
+
+- Check whether the servos are powered
+- Check whether PE3 and PE2 are wired correctly
+- Check whether the servos and MCU share a common ground
+- Check whether the servo ID and protocol are correct
+
+### 2. Garbled serial output
+
+- Check whether the UART7 baud rate is correct
+- Check whether the serial cable is wired correctly
+- Check whether the USB-to-serial module is working properly
+
+### 3. Servo communication fails
+
+- Check whether the USART10 configuration is correct
+- Check whether the bus speed matches the firmware settings
+- Check whether the servo model is FEETECH STS3215
+- Check whether multiple devices are conflicting on the bus
+
+## Project Structure
+
+- Core/ - main program, startup files, and peripheral initialization
+- Device/STS3215/ - FEETECH STS3215 protocol and control code
+- Drivers/ - STM32 HAL low-level drivers
+- MDK-ARM/ - Keil project files
+
+## Notes
+
+This repository is mainly used for low-level communication and control of the FEETECH six-axis robotic arm, and it is suitable as a starting point for robotic arm development.
+
+---
 
 Author: Nous3508
