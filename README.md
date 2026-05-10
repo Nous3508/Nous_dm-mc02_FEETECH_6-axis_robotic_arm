@@ -69,7 +69,3 @@ PRs and issues are welcome — though this project currently retains All Rights 
 ## Contact
 
 Author: Nous3508
-
----
-
-Enjoy tinkering! If you want, I can also add a one-click build/flash script for VS Code or a small wiring diagram image to the repo.
