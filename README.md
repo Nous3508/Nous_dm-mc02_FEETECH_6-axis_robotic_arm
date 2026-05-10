@@ -1,194 +1,194 @@
 # Nous_dm-mc02_FEETECH_6-axis_robotic_arm
 
-This repository contains the firmware for a FEETECH six-axis robotic arm based on the STM32H723VGT6. It is mainly used to drive FEETECH STS3215 serial servos over a serial bus, supporting joint motion control, servo scanning, and basic debugging.
+这是一个基于 **STM32H723VGT6** 的 **FEETECH 六轴机械臂** 控制固件工程，主要用于通过串口总线驱动 **FEETECH STS3215** 串行舵机，实现机械臂各关节的运动控制、舵机搜索和基础调试功能。
 
-## Project Overview
+## 项目简介
 
-The project provides the following features:
+本项目主要包含以下功能：
 
-- Communication with the FEETECH servo bus through USART10
-- Support for the FEETECH STS3215 serial servo protocol
-- Debug output through UART7 to a serial terminal or PC
-- Servo scanning, communication testing, and status debugging after power-up
-- A basic control foundation for a 6-DOF robotic arm
+- 通过 **USART10** 与 FEETECH 舵机总线通信
+- 支持 **FEETECH STS3215** 串行舵机协议
+- 通过 **UART7** 输出调试信息到串口助手或 PC
+- 上电后可进行舵机搜索、通信测试和状态调试
+- 适用于 6 自由度机械臂的基础控制与联调
 
-## Hardware Platform
+## 硬件平台
 
-- Main MCU: STM32H723VGT6
-- Servo model: FEETECH STS3215
-- Development tools: Keil MDK / VS Code
-- Programmer / debugger: ST-Link
-- Firmware library: STM32Cube HAL
+- **主控芯片**：STM32H723VGT6
+- **舵机型号**：FEETECH STS3215
+- **开发工具**：Keil MDK / VS Code
+- **下载调试器**：ST-Link
+- **固件库**：STM32Cube HAL
 
-## Wiring
+## 接线说明
 
-### 1. Servo bus wiring (USART10)
+### 1. 舵机总线接线（USART10）
 
-The robotic arm servos communicate with the MCU through USART10:
+机械臂舵机通过 **USART10** 与主控板通信：
 
-- PE3 (USART10_TX) -> servo RX
-- PE2 (USART10_RX) <- servo TX
+- **PE3（USART10_TX）** → 舵机 RX
+- **PE2（USART10_RX）** ← 舵机 TX
 
-### 2. Debug serial wiring (UART7)
+### 2. 调试串口接线（UART7）
 
-Debug information is output through UART7:
+调试信息通过 **UART7** 输出：
 
-- PE8 (UART7_TX) -> USB-to-serial module RX
-- PE7 (UART7_RX) <- USB-to-serial module TX
+- **PE8（UART7_TX）** → USB 转串口模块 RX
+- **PE7（UART7_RX）** ← USB 转串口模块 TX
 
-### 3. Wiring notes
+### 3. 接线注意事项
 
-- The MCU board and the servos must share a common ground
-- Use a separate and stable power supply for the servos
-- Do not power the servos directly from MCU pins
-- If you perform a PE3 and PE2 loopback test, disconnect the servos first to avoid bus conflicts
-- If communication fails, check the following first:
-  - TX and RX wiring
-  - Common ground
-  - Servo power supply
-  - Serial settings
+- 主控板与舵机必须 **共地**
+- 舵机请使用 **独立且稳定的供电**
+- **不要**直接使用 MCU 引脚给舵机供电
+- 如果做 **PE3 与 PE2 回环测试**，请先断开舵机，避免总线冲突
+- 若通信异常，优先检查：
+  - TX / RX 是否接反
+  - 是否共地
+  - 舵机供电是否正常
+  - 串口参数是否一致
 
-## Features
+## 功能说明
 
-### 1. Servo communication
+### 1. 舵机通信
 
-This project supports FEETECH STS3215 serial servo communication for:
+本工程支持 FEETECH STS3215 串口舵机通信，可用于：
 
-- Writing target position
-- Setting speed
-- Setting acceleration
-- Reading servo position, speed, load, voltage, temperature, current, and other status data
+- 写入目标位置
+- 设置速度
+- 设置加速度
+- 读取舵机当前位置、速度、负载、电压、温度、电流等状态
 
-### 2. Servo scanning
+### 2. 舵机搜索
 
-After startup, the firmware can scan the servo bus to detect which servos are online and print their IDs.
+程序启动后可执行舵机扫描功能，用于检测总线上有哪些舵机在线，并打印对应 ID。
 
-By default, it scans a range of IDs to help confirm that each joint of the arm is connected correctly.
+默认会扫描一段 ID 范围，帮助确认机械臂各关节是否连接正常。
 
-### 3. Debug output
+### 3. 调试输出
 
-The firmware prints logs through UART7, which is useful for:
+程序通过 UART7 输出运行日志，便于：
 
-- Checking startup status
-- Verifying communication success
-- Debugging servo connections
-- Inspecting scan results and error messages
+- 查看启动状态
+- 检查通信是否成功
+- 调试舵机连接
+- 观察搜索结果和错误信息
 
-### 4. Basic robotic arm control
+### 4. 机械臂控制基础
 
-This project can serve as a base for 6-axis robotic arm control and can be extended later for:
+本项目可作为 6 轴机械臂控制程序的基础，后续可扩展为：
 
-- Joint angle control
-- Multi-servo synchronized motion
-- Arm motion sequencing
-- Homing and pose control
+- 关节角度控制
+- 多舵机同步运动
+- 机械臂动作编排
+- 回零与姿态控制
 
-## STS3215 Code Explanation
+## STS3215 代码说明
 
-The STS3215-related code in this project is organized into four layers: communication, control, status, and protocol definitions. They correspond to different files under Device/STS3215/.
+项目中的 STS3215 相关代码主要分为 4 层：通信层、控制层、状态层和协议定义层，分别对应 `Device/STS3215/` 目录下的不同文件。
 
-### 1. Communication Layer: STS3215_comm.c / STS3215_comm.h
+### 1. 通信层：STS3215_comm.c / STS3215_comm.h
 
-This layer handles byte-level communication with the servo bus and wraps the HAL UART interfaces into functions that the STS3215 protocol can use.
+这一层负责和舵机总线进行字节级收发，核心作用是把 HAL 串口收发封装成 STS3215 协议可用的接口。
 
-- ftUart_Send(): sends servo command data
-- ftUart_Read(): receives servo response data
-- ftBus_Delay(): bus switching delay to keep the transmit/receive timing correct
-- readSCS() / writeSCS() / writeByteSCS(): low-level protocol read/write interfaces
-- rFlushSCS() / wFlushSCS(): clears the receive and transmit buffers
+- `ftUart_Send()`：发送舵机指令数据
+- `ftUart_Read()`：接收舵机应答数据
+- `ftBus_Delay()`：总线切换延时，保证收发切换时序正确
+- `readSCS()` / `writeSCS()` / `writeByteSCS()`：协议底层的读写接口
+- `rFlushSCS()` / `wFlushSCS()`：刷新接收和发送缓冲区
 
-This layer does not care about the actual motion being controlled. Its only job is to make sure the data is sent and received correctly.
+这一层一般不直接关心“控制什么动作”，只负责把数据准确发出去、把舵机返回的数据正确收回来。
 
-### 2. Protocol and Control Layer: STS3215_control.c / STS3215_control.h
+### 2. 协议与控制层：STS3215_control.c / STS3215_control.h
 
-This layer converts control requests such as target position, speed, acceleration, and mode switching into commands that the STS3215 servo can understand.
+这一层负责把“目标位置、速度、加速度、模式切换”等控制需求，转换成 STS3215 舵机能识别的协议命令。
 
-- STS3215_Init(): initializes the servo protocol environment and performs a servo scan
-- Find_STS3215(): scans servo IDs on the bus and prints the devices that respond
-- STS3215_SetPosEx(): standard position control for moving a single servo directly
-- STS3215_SetPosEx_Reg(): deferred position write for batching commands before execution
-- STS3215_SetPosEx_Sync(): synchronized position write for multiple servos, useful for robotic arm motion
-- STS3215_WheelMode(): switches to wheel mode
-- STS3215_SetSpeed_WheelMode(): controls speed in wheel mode
-- STS3215_CalibrationOfs(): center offset calibration
-- STS3215_unLockEPROMEx() / STS3215_LockEPROMEx(): unlocks or locks the servo EEPROM area
+- `STS3215_Init()`：初始化舵机协议环境，并执行一次舵机搜索
+- `Find_STS3215()`：在总线上扫描舵机 ID，并打印在线设备
+- `STS3215_SetPosEx()`：普通位置控制，适合单个舵机直接运动
+- `STS3215_SetPosEx_Reg()`：异步写位置指令，适合需要批量预写后统一执行的场景
+- `STS3215_SetPosEx_Sync()`：同步写多个舵机的位置，适合机械臂联动
+- `STS3215_WheelMode()`：切换到恒速模式
+- `STS3215_SetSpeed_WheelMode()`：在恒速模式下控制转速
+- `STS3215_CalibrationOfs()`：中位校准
+- `STS3215_unLockEPROMEx()` / `STS3215_LockEPROMEx()`：解锁或锁定舵机 EEPROM 区
 
-In practice, this layer first packs position, speed, and acceleration into the byte arrays required by the servo protocol, then sends the command through the lower-level write interface.
+从实现上看，这一层会先把位置、速度、加速度等参数整理成舵机协议需要的字节数组，再调用底层写指令接口发送出去。
 
-### 3. Status Layer: STS3215_status.c / STS3215_status.h
+### 3. 状态层：STS3215_status.c / STS3215_status.h
 
-This layer reads servo status for debugging, tuning, and fault diagnosis.
+这一层负责读取舵机当前状态，用于调试、联调和故障排查。
 
-- STS3215_Get_AllPos_Status(): reads multiple status values
-- STS3215_ReadStatus(): reads servo status by ID
-- FeedBack(): reads and processes feedback data
-- ReadPos() / ReadSpeed() / ReadLoad() / ReadVoltage() / ReadTemper() / ReadMove() / ReadCurrent(): read position, speed, load, voltage, temperature, motion state, and current
+- `STS3215_Get_AllPos_Status()`：读取多项状态信息
+- `STS3215_ReadStatus()`：按 ID 读取舵机状态
+- `FeedBack()`：读取并处理反馈数据
+- `ReadPos()` / `ReadSpeed()` / `ReadLoad()` / `ReadVoltage()` / `ReadTemper()` / `ReadMove()` / `ReadCurrent()`：分别读取位置、速度、负载、电压、温度、运动状态和电流
 
-This layer is useful when checking whether the servo really executed a command, or when diagnosing power, load, or temperature problems.
+这一层适合在调试时查看舵机是否真的执行了指令，也可以用来判断供电、负载或温度是否异常。
 
-### 4. Memory Table Definitions: STS3215_control.h / STS3215_status.h
+### 4. 内存表定义：STS3215_control.h / STS3215_status.h
 
-These header files define the STS3215 register addresses, such as:
+这两个头文件里定义了 STS3215 的寄存器地址，例如：
 
-- STS3215_ID: servo ID
-- STS3215_BAUD_RATE: baud rate
-- STS3215_GOAL_POSITION_L/H: target position
-- STS3215_PRESENT_POSITION_L/H: current position
-- STS3215_PRESENT_SPEED_L/H: current speed
-- STS3215_PRESENT_LOAD_L/H: current load
-- STS3215_PRESENT_VOLTAGE: current voltage
-- STS3215_PRESENT_TEMPERATURE: current temperature
+- `STS3215_ID`：舵机 ID
+- `STS3215_BAUD_RATE`：波特率
+- `STS3215_GOAL_POSITION_L/H`：目标位置
+- `STS3215_PRESENT_POSITION_L/H`：当前位置
+- `STS3215_PRESENT_SPEED_L/H`：当前速度
+- `STS3215_PRESENT_LOAD_L/H`：当前负载
+- `STS3215_PRESENT_VOLTAGE`：当前电压
+- `STS3215_PRESENT_TEMPERATURE`：当前温度
 
-You can think of these definitions as the servo's internal register address map. The upper-level code only needs to use these names instead of remembering the raw numeric values.
+可以把这些定义理解为“舵机内部寄存器地址表”。上层代码只需要写这些宏名，不需要在业务逻辑里记住具体数值。
 
-## Communication Settings
+## 通信配置
 
-- Servo bus: USART10
-- Debug serial: UART7
-- Servo communication parameters: 115200, 8N1
-- Output: serial logs plus servo status information
+- **舵机总线串口**：USART10
+- **调试串口**：UART7
+- **舵机通信参数**：115200，8N1
+- **程序输出**：串口日志 + 舵机状态信息
 
-## Usage
+## 使用说明
 
-1. Make sure the hardware wiring is correct
-2. Power on the MCU board and the servos
-3. Download the firmware to the development board
-4. Open the debug serial port and view the logs
-5. Watch the servo scan and communication output to confirm normal operation
+1. 确认硬件接线正确
+2. 给主控板和舵机上电
+3. 下载固件到开发板
+4. 打开调试串口查看日志
+5. 观察舵机搜索和通信输出，确认机械臂工作正常
 
-## Common Issues
+## 常见问题
 
-### 1. Servos do not respond
+### 1. 舵机无反应
 
-- Check whether the servos are powered
-- Check whether PE3 and PE2 are wired correctly
-- Check whether the servos and MCU share a common ground
-- Check whether the servo ID and protocol are correct
+- 检查舵机是否供电
+- 检查 PE3 / PE2 是否接反
+- 检查舵机是否与主控板共地
+- 检查舵机 ID 和通信协议是否正确
 
-### 2. Garbled serial output
+### 2. 串口输出乱码
 
-- Check whether the UART7 baud rate is correct
-- Check whether the serial cable is wired correctly
-- Check whether the USB-to-serial module is working properly
+- 检查 UART7 波特率是否正确
+- 检查串口线是否接反
+- 检查 USB 转串口模块是否正常
 
-### 3. Servo communication fails
+### 3. 舵机通信失败
 
-- Check whether the USART10 configuration is correct
-- Check whether the bus speed matches the firmware settings
-- Check whether the servo model is FEETECH STS3215
-- Check whether multiple devices are conflicting on the bus
+- 检查 USART10 配置是否正确
+- 检查总线速度是否匹配
+- 检查舵机型号是否为 FEETECH STS3215
+- 检查舵机总线是否有多个设备冲突
 
-## Project Structure
+## 工程结构
 
-- Core/ - main program, startup files, and peripheral initialization
-- Device/STS3215/ - FEETECH STS3215 protocol and control code
-- Drivers/ - STM32 HAL low-level drivers
-- MDK-ARM/ - Keil project files
+- `Core/`：主程序、启动文件、外设初始化
+- `Device/STS3215/`：FEETECH STS3215 协议与控制相关代码
+- `Drivers/`：STM32 HAL 底层驱动
+- `MDK-ARM/`：Keil 工程文件
 
-## Notes
+## 说明
 
-This repository is mainly used for low-level communication and control of the FEETECH six-axis robotic arm, and it is suitable as a starting point for robotic arm development.
+本仓库主要用于 FEETECH 六轴机械臂的底层通信与控制，适合作为机械臂控制开发的基础工程。
 
 ---
 
-Author: Nous3508
+作者：Nous3508
